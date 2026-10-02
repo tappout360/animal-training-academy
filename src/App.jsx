@@ -18,6 +18,8 @@ import CoachDashboard from './components/coach/CoachDashboard';
 import ContentGovernanceHub from './components/governance/ContentGovernanceHub';
 import AdminControlCenter from './components/admin/AdminControlCenter';
 import HerdTrailQuest from './components/game/HerdTrailQuest';
+import YouthSessionGuard from './components/common/YouthSessionGuard';
+import ParentControlCenter from './components/parent/ParentControlCenter';
 
 import { getSpeciesPackById } from './data/speciesPacks';
 import { 
@@ -58,7 +60,8 @@ export default function App() {
     setActiveLessonModule(null);
     setActiveQuizModule(null);
     if (newRole === 'youth') setActiveTab('modules');
-    else if (newRole === 'coach' || newRole === 'parent') setActiveTab('roster');
+    else if (newRole === 'parent') setActiveTab('parent_controls');
+    else if (newRole === 'coach') setActiveTab('roster');
     else if (newRole === 'admin') setActiveTab('governance');
   };
 
@@ -126,102 +129,127 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Youth Learner Experience */}
         {activeRole === 'youth' && (
-          <div className="space-y-6">
-            {/* Age Division Selector Toolbar */}
-            <AgeDivisionSelector
-              selectedDivision={activeDivision}
-              onSelectDivision={setActiveDivision}
-            />
-
-            {/* Drill-down: Active Quiz View */}
-            {activeQuizModule ? (
-              <QuizEngine
-                module={activeQuizModule}
-                pack={currentPack}
-                division={activeDivision}
-                onCompleteQuiz={handleCompleteQuiz}
-                onBack={() => setActiveQuizModule(null)}
-                onOpenAiCoach={() => setIsAiModalOpen(true)}
+          <YouthSessionGuard learner={currentLearner} activeDivision={activeDivision}>
+            <div className="space-y-6">
+              {/* Age Division Selector Toolbar */}
+              <AgeDivisionSelector
+                selectedDivision={activeDivision}
+                onSelectDivision={setActiveDivision}
               />
-            ) : activeLessonModule ? (
-              /* Drill-down: Active Lesson View */
-              <LessonViewer
-                module={activeLessonModule}
-                pack={currentPack}
-                division={activeDivision}
-                onBack={() => setActiveLessonModule(null)}
-                onStartQuiz={() => {
-                  setActiveQuizModule(activeLessonModule);
-                  setActiveLessonModule(null);
-                }}
-                onAskAi={() => setIsAiModalOpen(true)}
-              />
-            ) : (
-              /* Normal Tab Views */
-              <>
-                {activeTab === 'herd_trail' && (
-                  <HerdTrailQuest
-                    learner={currentLearner}
-                    activeDivision={activeDivision}
-                    userRole={activeRole}
-                    onOpenAiTrainer={() => setIsAiModalOpen(true)}
-                    onCompleteQuiz={handleCompleteQuiz}
-                  />
-                )}
 
-                {activeTab === 'modules' && (
-                  <div className="space-y-6">
-                    <SpeciesPackSelector
+              {/* Drill-down: Active Quiz View */}
+              {activeQuizModule ? (
+                <QuizEngine
+                  module={activeQuizModule}
+                  pack={currentPack}
+                  division={activeDivision}
+                  onCompleteQuiz={handleCompleteQuiz}
+                  onBack={() => setActiveQuizModule(null)}
+                  onOpenAiCoach={() => setIsAiModalOpen(true)}
+                />
+              ) : activeLessonModule ? (
+                /* Drill-down: Active Lesson View */
+                <LessonViewer
+                  module={activeLessonModule}
+                  pack={currentPack}
+                  division={activeDivision}
+                  onBack={() => setActiveLessonModule(null)}
+                  onStartQuiz={() => {
+                    setActiveQuizModule(activeLessonModule);
+                    setActiveLessonModule(null);
+                  }}
+                  onAskAi={() => setIsAiModalOpen(true)}
+                />
+              ) : (
+                /* Normal Tab Views */
+                <>
+                  {activeTab === 'herd_trail' && (
+                    <HerdTrailQuest
+                      learner={currentLearner}
+                      activeDivision={activeDivision}
+                      userRole={activeRole}
+                      onOpenAiTrainer={() => setIsAiModalOpen(true)}
+                      onCompleteQuiz={handleCompleteQuiz}
+                    />
+                  )}
+
+                  {activeTab === 'modules' && (
+                    <div className="space-y-6">
+                      <SpeciesPackSelector
+                        selectedSpeciesId={selectedSpeciesId}
+                        onSelectSpecies={setSelectedSpeciesId}
+                      />
+
+                      <ModuleBrowser
+                        pack={currentPack}
+                        division={activeDivision}
+                        progressList={progressList}
+                        onOpenLesson={(mod) => setActiveLessonModule(mod)}
+                        onOpenQuiz={(mod) => setActiveQuizModule(mod)}
+                      />
+                    </div>
+                  )}
+
+                  {activeTab === 'skillathon' && (
+                    <SkillathonDrills selectedSpeciesId={selectedSpeciesId} />
+                  )}
+
+                  {activeTab === 'showmanship' && (
+                    <ShowmanshipOralStudio
                       selectedSpeciesId={selectedSpeciesId}
-                      onSelectSpecies={setSelectedSpeciesId}
-                    />
-
-                    <ModuleBrowser
-                      pack={currentPack}
                       division={activeDivision}
-                      progressList={progressList}
-                      onOpenLesson={(mod) => setActiveLessonModule(mod)}
-                      onOpenQuiz={(mod) => setActiveQuizModule(mod)}
                     />
-                  </div>
-                )}
+                  )}
 
-                {activeTab === 'skillathon' && (
-                  <SkillathonDrills selectedSpeciesId={selectedSpeciesId} />
-                )}
+                  {activeTab === 'ethics' && (
+                    <EthicsScenarioSimulator />
+                  )}
 
-                {activeTab === 'showmanship' && (
-                  <ShowmanshipOralStudio
-                    selectedSpeciesId={selectedSpeciesId}
-                    division={activeDivision}
-                  />
-                )}
+                  {activeTab === 'mastery' && (
+                    <MasteryMap
+                      progressList={progressList}
+                      speciesId={selectedSpeciesId}
+                      onSelectModule={(modId) => {
+                        const mod = currentPack.modules.find(m => m.id === modId);
+                        if (mod) setActiveLessonModule(mod);
+                      }}
+                    />
+                  )}
 
-                {activeTab === 'ethics' && (
-                  <EthicsScenarioSimulator />
-                )}
-
-                {activeTab === 'mastery' && (
-                  <MasteryMap
-                    progressList={progressList}
-                    speciesId={selectedSpeciesId}
-                    onSelectModule={(modId) => {
-                      const mod = currentPack.modules.find(m => m.id === modId);
-                      if (mod) setActiveLessonModule(mod);
-                    }}
-                  />
-                )}
-
-                {activeTab === 'achievements' && (
-                  <MyAchievements learner={currentLearner} />
-                )}
-              </>
-            )}
-          </div>
+                  {activeTab === 'achievements' && (
+                    <MyAchievements learner={currentLearner} />
+                  )}
+                </>
+              )}
+            </div>
+          </YouthSessionGuard>
         )}
 
-        {/* Coach / Parent Hub Experience */}
-        {(activeRole === 'coach' || activeRole === 'parent') && (
+        {/* Parent Guardian Center Experience */}
+        {activeRole === 'parent' && (
+          activeTab === 'roster' || activeTab === 'assignments' ? (
+            <CoachDashboard
+              learners={learners}
+              progressList={progressList}
+              assignments={assignments}
+              observations={observations}
+              onAddAssignment={handleAddAssignment}
+              onSaveObservation={handleSaveObservation}
+            />
+          ) : (
+            <ParentControlCenter
+              learners={learners}
+              activeLearnerId={currentLearner.id}
+              onSelectLearner={(id) => {
+                const found = learners.find(l => l.id === id);
+                if (found) setCurrentLearner(found);
+              }}
+            />
+          )
+        )}
+
+        {/* Coach / Leader Hub Experience */}
+        {activeRole === 'coach' && (
           <CoachDashboard
             learners={learners}
             progressList={progressList}

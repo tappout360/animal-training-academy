@@ -24,6 +24,7 @@ import { TRAIL_PACKS, getTrailPackById } from '../src/data/game/trailPacks.js';
 import { validateCareOption } from '../src/data/game/careRuleset.js';
 import { ALL_COSMETICS } from '../src/data/game/cosmeticsCatalog.js';
 import { TrailQuestEngine } from '../src/services/TrailQuestEngine.js';
+import { ParentalControlsService, getSafeDefaultsByDivision } from '../src/services/ParentalControlsService.js';
 
 console.log('🧪 Starting WarrenWise Youth Animal Training Academy Test Suite...\n');
 
@@ -490,6 +491,127 @@ test('TrailQuestEngine supports Coach Signal Path beacons', () => {
   });
 
   assert.ok(withBeacon.coachSignals.some(s => s.targetNodeId === 'rb_node_5' && s.coachName === 'Coach Sarah'));
+});
+
+// ----------------------------------------------------
+// 9. PARENT-DEFINED CONTROLS & AUDIT LOGGING TESTS
+// ----------------------------------------------------
+console.log('\n--- 9. Parent-Defined Controls & Real-Time Enforcement Tests ---');
+
+test('Provides safe age-responsive defaults without hard-locking senior youth', () => {
+  const cloverbudDefaults = getSafeDefaultsByDivision('cloverbud');
+  const seniorDefaults = getSafeDefaultsByDivision('senior');
+
+  assert.strictEqual(cloverbudDefaults.dailyTimeLimitMinutes, 30, 'Cloverbud defaults to 30 min');
+  assert.strictEqual(cloverbudDefaults.schedule.type, 'custom', 'Cloverbud defaults to curfew schedule');
+  assert.strictEqual(seniorDefaults.dailyTimeLimitMinutes, null, 'Senior defaults to No Limit (null)');
+  assert.strictEqual(seniorDefaults.schedule.type, 'always', 'Senior defaults to always allowed');
+});
+
+test('Parents can set or remove limits independently per child (including No Limit)', () => {
+  const child1Id = 'test_child_leo';
+  const child2Id = 'test_child_maya';
+
+  // Set child 1 to 45 min
+  const res1 = ParentalControlsService.saveLimits({
+    learnerId: child1Id,
+    learnerHandle: 'Leo42',
+    parentPin: '4444',
+    newLimits: { ...getSafeDefaultsByDivision('junior'), dailyTimeLimitMinutes: 45 },
+    reason: 'Parent set 45m limit for Leo'
+  });
+  assert.strictEqual(res1.success, true);
+  assert.strictEqual(res1.limits.dailyTimeLimitMinutes, 45);
+
+  // Set child 2 to No Limit (null)
+  const res2 = ParentalControlsService.saveLimits({
+    learnerId: child2Id,
+    learnerHandle: 'MayaBunny',
+    parentPin: '4444',
+    newLimits: { ...getSafeDefaultsByDivision('cloverbud'), dailyTimeLimitMinutes: null },
+    reason: 'Parent removed limit for Maya'
+  });
+  assert.strictEqual(res2.success, true);
+  assert.strictEqual(res2.limits.dailyTimeLimitMinutes, null, 'No Limit option must be supported');
+
+  // Verify child 1 remains 45 min and child 2 remains No Limit
+  const loaded1 = ParentalControlsService.getLimitsForLearner(child1Id);
+  const loaded2 = ParentalControlsService.getLimitsForLearner(child2Id);
+  assert.strictEqual(loaded1.dailyTimeLimitMinutes, 45);
+  assert.strictEqual(loaded2.dailyTimeLimitMinutes, null);
+});
+
+test('Saving parental controls strictly requires 4-digit Parent PIN', () => {
+  const failRes = ParentalControlsService.saveLimits({
+    learnerId: 'test_child_pin',
+    parentPin: '1234', // Incorrect
+    newLimits: { dailyTimeLimitMinutes: 15 }
+  });
+  assert.strictEqual(failRes.success, false);
+  assert.ok(failRes.error.includes('PIN'));
+
+  const okRes = ParentalControlsService.saveLimits({
+    learnerId: 'test_child_pin',
+    parentPin: '4444', // Correct
+    newLimits: { dailyTimeLimitMinutes: 15 }
+  });
+  assert.strictEqual(okRes.success, true);
+});
+
+test('Parental control audit trail records all parent actions with timestamps', () => {
+  const childId = 'test_child_audit';
+  ParentalControlsService.saveLimits({
+    learnerId: childId,
+    learnerHandle: 'AuditKid',
+    parentPin: '4444',
+    newLimits: { dailyTimeLimitMinutes: 30, isAppFrozen: false },
+    reason: 'Initial setup test'
+  });
+
+  const logs = ParentalControlsService.getAuditLogs(childId);
+  assert.ok(logs.length >= 1, 'Must persist audit entries');
+  assert.strictEqual(logs[0].action, 'LIMITS_UPDATED');
+  assert.strictEqual(logs[0].description, 'Initial setup test');
+  assert.ok(logs[0].timestamp, 'Must record ISO timestamp');
+});
+
+test('Instant Freeze tool and Quick Extension tool function accurately', () => {
+  const childId = 'test_child_tools';
+  
+  // Freeze
+  const freezeRes = ParentalControlsService.setAppFreeze({
+    learnerId: childId,
+    parentPin: '4444',
+    freeze: true,
+    message: 'Time for dinner!'
+  });
+  assert.strictEqual(freezeRes.success, true);
+  assert.strictEqual(freezeRes.limits.isAppFrozen, true);
+  assert.strictEqual(freezeRes.limits.freezeMessage, 'Time for dinner!');
+
+  // Quick Extension
+  const extRes = ParentalControlsService.quickExtend({
+    learnerId: childId,
+    parentPin: '4444',
+    extensionMinutes: 30
+  });
+  assert.strictEqual(extRes.success, true);
+  assert.strictEqual(extRes.limits.isAppFrozen, false, 'Extension must unfreeze app');
+});
+
+test('Species and game mode filtering respects parent-defined allowances', () => {
+  const openLimits = { allowedSpecies: 'ALL', allowedModes: 'ALL' };
+  assert.strictEqual(ParentalControlsService.isSpeciesAllowed(openLimits, 'rabbits'), true);
+  assert.strictEqual(ParentalControlsService.isModeAllowed(openLimits, 'herd_trail'), true);
+
+  const restrictedLimits = { 
+    allowedSpecies: ['rabbits', 'cavies'],
+    allowedModes: ['quizzes']
+  };
+  assert.strictEqual(ParentalControlsService.isSpeciesAllowed(restrictedLimits, 'rabbits'), true);
+  assert.strictEqual(ParentalControlsService.isSpeciesAllowed(restrictedLimits, 'beef_cattle'), false);
+  assert.strictEqual(ParentalControlsService.isModeAllowed(restrictedLimits, 'quizzes'), true);
+  assert.strictEqual(ParentalControlsService.isModeAllowed(restrictedLimits, 'herd_trail'), false);
 });
 
 // Summary

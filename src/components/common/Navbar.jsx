@@ -164,7 +164,39 @@ export default function Navbar({
             </>
           )}
 
-          {(activeRole === 'coach' || activeRole === 'parent') && (
+          {activeRole === 'parent' && (
+            <>
+              <button
+                onClick={() => onSelectTab('parent_controls')}
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
+                  activeTab === 'parent_controls' ? 'bg-white text-amber-800 shadow-xs border border-slate-200 font-bold' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                <span>Parental Controls &amp; Limits</span>
+              </button>
+              <button
+                onClick={() => onSelectTab('roster')}
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
+                  activeTab === 'roster' ? 'bg-white text-amber-800 shadow-xs border border-slate-200 font-bold' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5 text-amber-600" />
+                <span>My Children Progress</span>
+              </button>
+              <button
+                onClick={() => onSelectTab('assignments')}
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
+                  activeTab === 'assignments' ? 'bg-white text-amber-800 shadow-xs border border-slate-200 font-bold' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <CheckSquare className="w-3.5 h-3.5 text-teal-600" />
+                <span>Family Chores &amp; Learning</span>
+              </button>
+            </>
+          )}
+
+          {activeRole === 'coach' && (
             <>
               <button
                 onClick={() => onSelectTab('roster')}
@@ -173,7 +205,7 @@ export default function Navbar({
                 }`}
               >
                 <Users className="w-3.5 h-3.5 text-blue-600" />
-                <span>{activeRole === 'coach' ? 'Club Roster & Heatmaps' : 'My Minor Learners'}</span>
+                <span>Club Roster &amp; Heatmaps</span>
               </button>
               <button
                 onClick={() => onSelectTab('assignments')}
