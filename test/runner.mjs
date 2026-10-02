@@ -1,6 +1,8 @@
 // WarrenWise Youth Animal Training Academy - Automated Test Suite
 // Verifies Youth Safety, AI Veterinary Intercepts, 11 Species Packs, Content Matrix, Badges, and 5 Certificate Types
 
+process.removeAllListeners('warning');
+
 import assert from 'assert';
 import { ALL_SPECIES_PACKS, getSpeciesPackById } from '../src/data/speciesPacks/index.js';
 import { askWarrenWiseTrainer } from '../src/services/WarrenWiseTrainerAI.js';
