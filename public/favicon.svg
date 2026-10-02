@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="16" fill="#166534" />
+  <!-- Clover leaf shape -->
+  <path d="M32 20C32 14.5 27.5 10 22 10C16.5 10 12 14.5 12 20C12 25.5 16.5 30 22 30C22 30 24 30 25 29L32 32L25 35C24 34 22 34 22 34C16.5 34 12 38.5 12 44C12 49.5 16.5 54 22 54C27.5 54 32 49.5 32 44" fill="#22c55e" opacity="0.9"/>
+  <path d="M32 20C32 14.5 36.5 10 42 10C47.5 10 52 14.5 52 20C52 25.5 47.5 30 42 30C42 30 40 30 39 29L32 32L39 35C40 34 42 34 42 34C47.5 34 52 38.5 52 44C52 49.5 47.5 54 42 54C36.5 54 32 49.5 32 44" fill="#22c55e" opacity="0.9"/>
+  <!-- Animal ear/head silhouette accent -->
+  <circle cx="32" cy="32" r="10" fill="#ffffff" />
+  <path d="M28 27C27 23 29 20 31 20C33 20 33 23 32 27" stroke="#166534" stroke-width="2" stroke-linecap="round"/>
+  <path d="M36 27C37 23 35 20 33 20C31 20 31 23 32 27" stroke="#166534" stroke-width="2" stroke-linecap="round"/>
+  <!-- Graduation cap or star -->
+  <path d="M27 34L32 31L37 34L32 37Z" fill="#166534"/>
+  <path d="M37 34V37" stroke="#166534" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

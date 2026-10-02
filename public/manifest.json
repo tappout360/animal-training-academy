@@ -1,0 +1,16 @@
+{
+  "name": "WarrenWise Youth Animal Training Academy",
+  "short_name": "AnimalAcademy",
+  "description": "4-H & Youth Livestock Project Learning Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#166534",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
