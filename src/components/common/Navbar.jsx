@@ -3,7 +3,8 @@
 import React from 'react';
 import { 
   Sparkles, Bot, Flame, Wifi, WifiOff, Award, 
-  BookOpen, Target, CheckSquare, ShieldCheck, Users, BarChart3, HelpCircle 
+  BookOpen, Target, CheckSquare, ShieldCheck, Users, BarChart3, HelpCircle,
+  Compass, Map
 } from 'lucide-react';
 import RoleSwitcher from './RoleSwitcher';
 
@@ -90,6 +91,22 @@ export default function Navbar({
         <div className="max-w-7xl mx-auto flex items-center gap-1 overflow-x-auto py-1.5 scrollbar-none text-xs font-semibold">
           {activeRole === 'youth' && (
             <>
+              {/* Herd Trail Quest Signature Game Tab */}
+              <button
+                onClick={() => onSelectTab('herd_trail')}
+                className={`px-3.5 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap shadow-xs ${
+                  activeTab === 'herd_trail' 
+                    ? 'bg-gradient-to-r from-emerald-700 to-teal-800 text-white font-black ring-2 ring-emerald-400/40' 
+                    : 'text-emerald-950 bg-emerald-100/80 hover:bg-emerald-200/80 border border-emerald-300 font-bold'
+                }`}
+              >
+                <Compass className="w-4 h-4 text-amber-300" />
+                <span>Herd Trail Quest</span>
+                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 ml-0.5">
+                  Play Mode
+                </span>
+              </button>
+
               <button
                 onClick={() => onSelectTab('modules')}
                 className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${

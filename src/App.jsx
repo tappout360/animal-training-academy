@@ -17,6 +17,7 @@ import WarrenWiseTrainerModal from './components/ai/WarrenWiseTrainerModal';
 import CoachDashboard from './components/coach/CoachDashboard';
 import ContentGovernanceHub from './components/governance/ContentGovernanceHub';
 import AdminControlCenter from './components/admin/AdminControlCenter';
+import HerdTrailQuest from './components/game/HerdTrailQuest';
 
 import { getSpeciesPackById } from './data/speciesPacks';
 import { 
@@ -158,6 +159,15 @@ export default function App() {
             ) : (
               /* Normal Tab Views */
               <>
+                {activeTab === 'herd_trail' && (
+                  <HerdTrailQuest
+                    learner={currentLearner}
+                    activeDivision={activeDivision}
+                    userRole={activeRole}
+                    onOpenAiTrainer={() => setIsAiModalOpen(true)}
+                  />
+                )}
+
                 {activeTab === 'modules' && (
                   <div className="space-y-6">
                     <SpeciesPackSelector

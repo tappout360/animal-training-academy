@@ -20,6 +20,10 @@ import {
 import { BadgeEngine } from '../src/services/BadgeEngine.js';
 import { ALL_CATALOG_BADGES, CERTIFICATE_TYPES } from '../src/data/badgesCatalog.js';
 import { CONTENT_STATUSES, LEGAL_DISCLAIMERS } from '../src/config/constants.js';
+import { TRAIL_PACKS, getTrailPackById } from '../src/data/game/trailPacks.js';
+import { validateCareOption } from '../src/data/game/careRuleset.js';
+import { ALL_COSMETICS } from '../src/data/game/cosmeticsCatalog.js';
+import { TrailQuestEngine } from '../src/services/TrailQuestEngine.js';
 
 console.log('🧪 Starting WarrenWise Youth Animal Training Academy Test Suite...\n');
 
@@ -349,6 +353,103 @@ test('Detects stale content verified more than 365 days ago', () => {
 
   assert.strictEqual(isContentStale(oldDate), true, 'Older than 1 year must be stale');
   assert.strictEqual(isContentStale(freshDate), false, 'Recent date must not be stale');
+});
+
+// ----------------------------------------------------
+// 8. HERD TRAIL QUEST & PROGRESSION ENGINE TESTS
+// ----------------------------------------------------
+console.log('\n--- 8. Herd Trail Quest & Progression Engine Tests ---');
+
+test('Trail Packs support both 4-H Livestock Projects and Companion Pets', () => {
+  assert.ok(TRAIL_PACKS.length >= 4, 'Must have at least 4 signature trail routes');
+  const livestockTrails = TRAIL_PACKS.filter(p => p.type === 'livestock');
+  const petTrails = TRAIL_PACKS.filter(p => p.type === 'pet');
+
+  assert.ok(livestockTrails.length >= 2, 'Must include livestock project trails');
+  assert.ok(petTrails.length >= 2, 'Must include companion pet trails');
+
+  TRAIL_PACKS.forEach(tp => {
+    assert.ok(tp.companion?.name, `Trail ${tp.id} must define companion name`);
+    assert.ok(tp.regions?.length === 4, `Trail ${tp.id} must define all 4 regions`);
+    assert.ok(tp.nodes?.length >= 3, `Trail ${tp.id} must contain nodes`);
+  });
+});
+
+test('Care Challenges strictly adhere to veterinary boundary ruleset', () => {
+  let careOptionCount = 0;
+  TRAIL_PACKS.forEach(pack => {
+    pack.nodes.forEach(node => {
+      if (node.type === 'care_choices' && node.options) {
+        node.options.forEach(opt => {
+          careOptionCount++;
+          const val = validateCareOption(opt.text);
+          assert.strictEqual(val.isValid, true, `Care option violated rule: ${opt.text} (${val.reason})`);
+        });
+      }
+    });
+  });
+  assert.ok(careOptionCount >= 5, 'Must audit multiple care options across trail packs');
+});
+
+test('Cosmetics catalog is fully visual, tiered, and non-pay-to-win', () => {
+  assert.ok(ALL_COSMETICS.length >= 15, 'Must offer diverse cosmetic collection');
+  const validTypes = ['traveler_skin', 'companion_skin', 'trail_gear', 'emote', 'arrival_effect', 'habitat_decor', 'profile_flair'];
+  const validRarities = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'];
+
+  ALL_COSMETICS.forEach(c => {
+    assert.ok(validTypes.includes(c.type), `Invalid cosmetic type: ${c.type}`);
+    assert.ok(validRarities.includes(c.rarity), `Invalid rarity: ${c.rarity}`);
+    assert.ok(c.unlockCriteria, `Must specify educational unlock criteria for ${c.name}`);
+  });
+});
+
+test('TrailQuestEngine advances miles, manages supplies, updates bond, and unlocks cosmetics', () => {
+  const initial = TrailQuestEngine.loadState('test_quest_player');
+  assert.strictEqual(initial.currentMile, 0);
+
+  // Complete node at mile 12
+  const { updatedState, newlyUnlockedCosmetics } = TrailQuestEngine.completeNode({
+    state: initial,
+    nodeId: 'rb_node_1',
+    mile: 12,
+    isCorrect: true,
+    conditionDelta: 10,
+    suppliesDelta: { feed: 15, water: 20 },
+    bondXpDelta: 50,
+    division: 'junior'
+  });
+
+  assert.strictEqual(updatedState.currentMile, 12, 'Mile must advance to 12');
+  assert.ok(updatedState.completedNodeIds.includes('rb_node_1'));
+  assert.strictEqual(updatedState.supplies.feed, 75);
+  assert.strictEqual(updatedState.herdBond.xp, 50);
+
+  // Condition evaluation
+  assert.strictEqual(TrailQuestEngine.getConditionLevel(95).label, 'Excellent');
+  assert.strictEqual(TrailQuestEngine.getConditionLevel(40).label, 'Tired');
+
+  // Milestone advance to mile 50 should unlock Clover Scout outfit
+  const mile50Result = TrailQuestEngine.completeNode({
+    state: updatedState,
+    nodeId: 'rb_node_5',
+    mile: 50,
+    isCorrect: true,
+    bondXpDelta: 100,
+    division: 'junior'
+  });
+
+  assert.ok(mile50Result.updatedState.unlockedCosmeticIds.includes('outfit_clover_scout'), 'Mile 50 must unlock Clover Scout outfit');
+});
+
+test('TrailQuestEngine supports Coach Signal Path beacons', () => {
+  const state = TrailQuestEngine.loadState('test_quest_player');
+  const withBeacon = TrailQuestEngine.addCoachSignal(state, {
+    coachName: 'Coach Sarah',
+    note: 'Remember to check incisor overlap carefully at the judging table!',
+    targetNodeId: 'rb_node_5'
+  });
+
+  assert.ok(withBeacon.coachSignals.some(s => s.targetNodeId === 'rb_node_5' && s.coachName === 'Coach Sarah'));
 });
 
 // Summary
