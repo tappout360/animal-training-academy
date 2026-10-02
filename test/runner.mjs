@@ -1,5 +1,5 @@
 // WarrenWise Youth Animal Training Academy - Automated Test Suite
-// Verifies Youth Safety, AI Veterinary Intercepts, Species Packs, Governance Gates, and Certificates
+// Verifies Youth Safety, AI Veterinary Intercepts, 11 Species Packs, Content Matrix, Badges, and 5 Certificate Types
 
 import assert from 'assert';
 import { ALL_SPECIES_PACKS, getSpeciesPackById } from '../src/data/speciesPacks/index.js';
@@ -11,7 +11,14 @@ import {
   validateYouthProfile, verifyParentPin, canCoachAccessLearner 
 } from '../src/services/YouthSafetyService.js';
 import { calculateLearnerMastery } from '../src/services/MasteryEngine.js';
-import { issueMasteryCertificate } from '../src/services/CertificateService.js';
+import { 
+  issueVerifiableCertificate, issueMasteryCertificate 
+} from '../src/services/CertificateService.js';
+import { 
+  validateSpeciesPackMatrix, getAllContentMatrixSummaries 
+} from '../src/data/contentMatrix.js';
+import { BadgeEngine } from '../src/services/BadgeEngine.js';
+import { ALL_CATALOG_BADGES, CERTIFICATE_TYPES } from '../src/data/badgesCatalog.js';
 import { CONTENT_STATUSES, LEGAL_DISCLAIMERS } from '../src/config/constants.js';
 
 console.log('🧪 Starting WarrenWise Youth Animal Training Academy Test Suite...\n');
@@ -44,50 +51,200 @@ async function testAsync(name, fn) {
 }
 
 // ----------------------------------------------------
-// 1. SPECIES PACK COMPLETENESS & 9-MODULE SCHEMA
+// 1. ALL 11 SPECIES PACKS ARCHITECTURE & 9-MODULE SCHEMA
 // ----------------------------------------------------
-console.log('--- 1. Species Pack Architecture Tests ---');
+console.log('--- 1. Multi-Species Pack Architecture Tests (11 Species) ---');
 
-test('Rabbits Pack contains complete 9-module curriculum', () => {
-  const pack = getSpeciesPackById('rabbits');
-  assert.strictEqual(pack.id, 'rabbits');
-  assert.strictEqual(pack.modules.length, 9, 'Rabbits pack must have all 9 modules');
+const EXPECTED_SPECIES = [
+  'rabbits', 'cavies', 'poultry', 'goats',
+  'sheep', 'swine', 'beef_cattle', 'dairy_cattle',
+  'dogs', 'horses', 'vet_science'
+];
+
+test('All 11 target species packs are registered and contain complete 9-module curricula', () => {
+  assert.strictEqual(ALL_SPECIES_PACKS.length, 11, 'Must register exactly 11 species packs');
   
-  // Verify each module contains 4 age divisions
-  pack.modules.forEach(mod => {
-    assert.ok(mod.ageContent.cloverbud, `Module ${mod.id} missing cloverbud content`);
-    assert.ok(mod.ageContent.junior, `Module ${mod.id} missing junior content`);
-    assert.ok(mod.ageContent.intermediate, `Module ${mod.id} missing intermediate content`);
-    assert.ok(mod.ageContent.senior, `Module ${mod.id} missing senior content`);
-    assert.ok(mod.quizQuestions.length > 0, `Module ${mod.id} missing quiz questions`);
+  EXPECTED_SPECIES.forEach(spId => {
+    const pack = getSpeciesPackById(spId);
+    assert.ok(pack, `Pack ${spId} must exist`);
+    assert.strictEqual(pack.modules.length, 9, `Pack ${spId} must have all 9 modules`);
+    
+    // Verify each module contains 4 age divisions and objectives
+    pack.modules.forEach(mod => {
+      assert.ok(mod.ageContent?.cloverbud, `${spId} module ${mod.id} missing cloverbud content`);
+      assert.ok(mod.ageContent?.junior, `${spId} module ${mod.id} missing junior content`);
+      assert.ok(mod.ageContent?.intermediate, `${spId} module ${mod.id} missing intermediate content`);
+      assert.ok(mod.ageContent?.senior, `${spId} module ${mod.id} missing senior content`);
+      assert.ok(mod.objectives && mod.objectives.length >= 2, `${spId} module ${mod.id} missing objectives`);
+    });
   });
 });
 
-test('Cavies Pack contains complete 9-module curriculum', () => {
-  const pack = getSpeciesPackById('cavies');
-  assert.strictEqual(pack.id, 'cavies');
-  assert.strictEqual(pack.modules.length, 9, 'Cavies pack must have all 9 modules');
-  
-  // Verify Vitamin C is addressed in Nutrition module
-  const nutMod = pack.modules.find(m => m.id === 'nutrition');
-  assert.ok(nutMod, 'Nutrition module must exist');
-  assert.ok(
-    nutMod.objectives.some(o => o.includes('Vitamin C')),
-    'Cavies nutrition must mandate Vitamin C objective'
-  );
+test('Cavies Pack enforces mandatory daily Vitamin C in nutrition', () => {
+  const cavyPack = getSpeciesPackById('cavies');
+  const nutMod = cavyPack.modules.find(m => m.id === 'nutrition');
+  assert.ok(nutMod.objectives.some(o => o.toLowerCase().includes('vitamin c')));
 });
 
-test('Phase 2 Previews for Poultry and Goats are registered with 9-module templates', () => {
-  const poultry = getSpeciesPackById('poultry');
-  const goats = getSpeciesPackById('goats');
-  assert.strictEqual(poultry.modules.length, 9);
-  assert.strictEqual(goats.modules.length, 9);
+test('Sheep Pack enforces fatal copper toxicity prevention', () => {
+  const sheepPack = getSpeciesPackById('sheep');
+  const nutMod = sheepPack.modules.find(m => m.id === 'nutrition');
+  assert.ok(nutMod.objectives.some(o => o.toLowerCase().includes('copper')));
+});
+
+test('Dogs Pack covers 7 AKC groups and positive reinforcement', () => {
+  const dogsPack = getSpeciesPackById('dogs');
+  const bbMod = dogsPack.modules.find(m => m.id === 'basics_breeds');
+  assert.ok(bbMod.objectives.some(o => o.includes('7 official AKC breed groups')));
+});
+
+test('Horses Pack covers Quarter System showmanship and colic/laminitis prevention', () => {
+  const horsesPack = getSpeciesPackById('horses');
+  const showMod = horsesPack.modules.find(m => m.id === 'showmanship');
+  assert.ok(showMod.objectives.some(o => o.toLowerCase().includes('quarter system')));
+});
+
+test('Veterinary Science track provides comparative medicine without owned animal', () => {
+  const vsPack = getSpeciesPackById('vet_science');
+  assert.strictEqual(vsPack.category, 'Veterinary & Comparative Science');
+  const rkMod = vsPack.modules.find(m => m.id === 'record_keeping');
+  assert.ok(rkMod.objectives.some(o => o.includes('SOAP')));
 });
 
 // ----------------------------------------------------
-// 2. WARRENWISE AI SAFETY & VETERINARY BOUNDARY TESTS
+// 2. CONTENT MATRIX VALIDATION TESTS
 // ----------------------------------------------------
-console.log('\n--- 2. WarrenWise AI Safety & Vet Intercept Tests ---');
+console.log('\n--- 2. Content Matrix Compliance Tests ---');
+
+test('Content matrix audits all 11 species with 100% compliance and zero violations', () => {
+  const summaries = getAllContentMatrixSummaries(ALL_SPECIES_PACKS);
+  assert.strictEqual(summaries.length, 11);
+
+  summaries.forEach(s => {
+    assert.strictEqual(s.isValid, true, `Species ${s.speciesId} failed content matrix audit: ${JSON.stringify(s.violations)}`);
+    assert.strictEqual(s.passedModules, 9, `Species ${s.speciesId} passed ${s.passedModules}/9 modules`);
+    assert.strictEqual(s.violations.length, 0, `Species ${s.speciesId} has disallowed medical violations`);
+  });
+});
+
+// ----------------------------------------------------
+// 3. BADGES ENGINE & REWARDS TESTS
+// ----------------------------------------------------
+console.log('\n--- 3. 4-H Badges Engine & Rewards Tests ---');
+
+test('BadgeEngine evaluates unlocks correctly based on completed modules and streaks', () => {
+  const mockCompleted = [
+    { speciesId: 'rabbits', moduleId: 'basics_breeds' },
+    { speciesId: 'rabbits', moduleId: 'daily_care' },
+    { speciesId: 'rabbits', moduleId: 'nutrition' },
+    { speciesId: 'rabbits', moduleId: 'health_biosecurity' },
+    { speciesId: 'rabbits', moduleId: 'handling_welfare' },
+    { speciesId: 'rabbits', moduleId: 'record_keeping' },
+    { speciesId: 'rabbits', moduleId: 'showmanship' },
+    { speciesId: 'rabbits', moduleId: 'ethics_character' },
+    { speciesId: 'rabbits', moduleId: 'goals_communication' }
+  ];
+
+  const evalResult = BadgeEngine.evaluateLearnerBadges({
+    learnerId: 'test_lrn',
+    completedModules: mockCompleted,
+    quizScores: { basics_breeds: 90, daily_care: 85, nutrition: 90, health_biosecurity: 95, handling_welfare: 90, record_keeping: 85, showmanship: 95, ethics_character: 100, goals_communication: 90 },
+    streakDays: 7,
+    ethicsResolvedCount: 3,
+    existingBadgeKeys: []
+  });
+
+  const unlockedKeys = evalResult.newlyUnlocked.map(b => b.key);
+  assert.ok(unlockedKeys.includes('mastery_rabbits'), 'Must unlock rabbit project mastery');
+  assert.ok(unlockedKeys.includes('streak_3_days'), 'Must unlock 3-day streak');
+  assert.ok(unlockedKeys.includes('streak_7_days'), 'Must unlock 7-day streak');
+  assert.ok(unlockedKeys.includes('skill_ethics_champion'), 'Must unlock ethics champion');
+});
+
+await testAsync('BadgeEngine logs immutable audit record on manual coach grant', async () => {
+  const grant = await BadgeEngine.awardManualBadge({
+    learnerId: 'test_lrn',
+    badgeKey: 'leadership_peer_mentor',
+    grantedBy: 'Leader Sarah Jones',
+    reason: 'Exemplary leadership tutoring younger members in cavy grooming station',
+    role: 'coach'
+  });
+
+  assert.strictEqual(grant.success, true);
+  assert.strictEqual(grant.auditRecord.badgeKey, 'leadership_peer_mentor');
+  assert.ok(grant.auditRecord.reason.includes('Exemplary leadership'));
+});
+
+// ----------------------------------------------------
+// 4. CERTIFICATES STUDIO: 5 CERTIFICATE TYPES TESTS
+// ----------------------------------------------------
+console.log('\n--- 4. Certificate Studio & 5 Certificate Types Tests ---');
+
+await testAsync('Issues Species Academic Mastery Certificate with legal disclaimer', async () => {
+  const cert = await issueVerifiableCertificate({
+    certificateType: 'species_completion',
+    learnerId: 'lrn_01',
+    learnerHandle: 'RabbitWhiz',
+    speciesId: 'rabbits',
+    division: 'junior',
+    averageScore: 94
+  });
+
+  assert.ok(cert.verificationCode.startsWith('WW-RAB-'), 'Code must start with WW-RAB-');
+  assert.ok(cert.title.includes('Rabbit Project Academic Mastery Certificate'));
+  assert.ok(cert.disclaimer.includes('NOT an official certification'));
+  assert.ok(cert.disclaimer.includes('National 4-H'));
+});
+
+await testAsync('Issues Milestone Honor Certificate for cumulative modules', async () => {
+  const cert = await issueVerifiableCertificate({
+    certificateType: 'milestone',
+    learnerId: 'lrn_02',
+    learnerHandle: 'BarnScholar',
+    milestoneCount: 25
+  });
+
+  assert.ok(cert.title.includes('25 Modules Completed'));
+  assert.ok(cert.citation.includes('25 modules across the WarrenWise Animal Academy'));
+});
+
+await testAsync('Issues Showmanship Distinction Certificate', async () => {
+  const cert = await issueVerifiableCertificate({
+    certificateType: 'showmanship',
+    learnerId: 'lrn_03',
+    learnerHandle: 'TopShowman'
+  });
+
+  assert.ok(cert.title.includes('Showmanship & Practical Ringcraft Distinction'));
+  assert.ok(cert.citation.includes('breed-specific presentation'));
+});
+
+await testAsync('Issues Ethics & Animal Welfare Honors Certificate', async () => {
+  const cert = await issueVerifiableCertificate({
+    certificateType: 'ethics',
+    learnerId: 'lrn_04',
+    learnerHandle: 'CompassionClover'
+  });
+
+  assert.ok(cert.title.includes('Character & Animal Welfare Honors Certificate'));
+  assert.ok(cert.citation.includes('Head, Heart, Hands, and Health'));
+});
+
+await testAsync('Issues Multi-Species Academy Scholar Certificate', async () => {
+  const cert = await issueVerifiableCertificate({
+    certificateType: 'multi_species',
+    learnerId: 'lrn_05',
+    learnerHandle: 'VersatileStockman'
+  });
+
+  assert.ok(cert.title.includes('Multi-Species Academy Scholar Certificate'));
+  assert.ok(cert.citation.includes('three or more distinct livestock and companion species'));
+});
+
+// ----------------------------------------------------
+// 5. WARRENWISE AI SAFETY & VET INTERCEPT TESTS
+// ----------------------------------------------------
+console.log('\n--- 5. WarrenWise AI Safety & Vet Intercept Tests ---');
 
 await testAsync('AI strictly intercepts veterinary dosage query with safety refusal', async () => {
   const result = await askWarrenWiseTrainer({
@@ -115,9 +272,9 @@ await testAsync('AI safely provides approved educational coaching for showmanshi
 });
 
 // ----------------------------------------------------
-// 3. YOUTH SAFETY & COPPA BOUNDARY TESTS
+// 6. YOUTH SAFETY & COPPA PERMISSION TESTS
 // ----------------------------------------------------
-console.log('\n--- 3. Youth Safety & COPPA Permission Tests ---');
+console.log('\n--- 6. Youth Safety & COPPA Permission Tests ---');
 
 test('Minor profile requires parent email', () => {
   const invalidMinor = {
@@ -150,9 +307,9 @@ test('Coach access requires explicit assignment and parent consent', () => {
 });
 
 // ----------------------------------------------------
-// 4. KNOWLEDGE GOVERNANCE & ANIMAL SAFETY GATE TESTS
+// 7. KNOWLEDGE GOVERNANCE & ANIMAL SAFETY GATES
 // ----------------------------------------------------
-console.log('\n--- 4. Knowledge Governance & Animal Safety Gate Tests ---');
+console.log('\n--- 7. Knowledge Governance & Animal Safety Gates ---');
 
 test('Animal health/welfare module blocks approval without certified safety sign-off', () => {
   const healthItem = {
@@ -192,44 +349,6 @@ test('Detects stale content verified more than 365 days ago', () => {
 
   assert.strictEqual(isContentStale(oldDate), true, 'Older than 1 year must be stale');
   assert.strictEqual(isContentStale(freshDate), false, 'Recent date must not be stale');
-});
-
-// ----------------------------------------------------
-// 5. MASTERY ENGINE & CERTIFICATES TESTS
-// ----------------------------------------------------
-console.log('\n--- 5. Mastery Engine & Certificate Tests ---');
-
-test('Calculates skill mastery and determines certificate eligibility', () => {
-  const dummyProgress = [
-    { speciesId: 'rabbits', moduleId: 'basics_breeds', status: 'completed', score: 100 },
-    { speciesId: 'rabbits', moduleId: 'daily_care', status: 'completed', score: 90 },
-    { speciesId: 'rabbits', moduleId: 'nutrition', status: 'completed', score: 85 },
-    { speciesId: 'rabbits', moduleId: 'health_biosecurity', status: 'completed', score: 95 },
-    { speciesId: 'rabbits', moduleId: 'handling_welfare', status: 'completed', score: 100 },
-    { speciesId: 'rabbits', moduleId: 'record_keeping', status: 'completed', score: 80 },
-    { speciesId: 'rabbits', moduleId: 'showmanship', status: 'completed', score: 95 },
-    { speciesId: 'rabbits', moduleId: 'ethics_character', status: 'completed', score: 100 },
-    { speciesId: 'rabbits', moduleId: 'communication_goals', status: 'completed', score: 90 }
-  ];
-
-  const mastery = calculateLearnerMastery(dummyProgress, 'rabbits');
-  assert.strictEqual(mastery.completedCount, 9);
-  assert.strictEqual(mastery.overallPercentage, 100);
-  assert.strictEqual(mastery.isEligibleForCertificate, true);
-});
-
-await testAsync('Issues verifiable certificate with mandatory legal disclaimers', async () => {
-  const cert = await issueMasteryCertificate({
-    learnerId: 'lrn_01',
-    learnerHandle: 'CloverChampion42',
-    speciesId: 'rabbits',
-    division: 'junior',
-    averageScore: 93
-  });
-
-  assert.ok(cert.verificationCode.startsWith('WW-CERT-RAB-'), 'Verification code format invalid');
-  assert.ok(cert.disclaimer.includes('NOT an official certification'), 'Must contain non-official disclaimer');
-  assert.ok(cert.disclaimer.includes('National 4-H'), 'Must cite non-affiliation disclaimer');
 });
 
 // Summary

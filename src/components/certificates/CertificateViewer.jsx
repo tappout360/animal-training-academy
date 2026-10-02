@@ -64,10 +64,22 @@ export default function CertificateViewer({
             <div className="text-2xl sm:text-3xl font-bold text-emerald-900 underline decoration-emerald-300 decoration-2 underline-offset-4">
               {certificate.learnerDisplayName}
             </div>
-            <div className="text-xs sm:text-sm text-slate-700 max-w-lg mx-auto pt-1">
-              has satisfactorily completed all 9 core educational training modules in the
-              <strong className="text-slate-900 block mt-0.5">{certificate.title}</strong>
-              with an overall examination average score of <strong className="text-emerald-800">{certificate.averageScore}%</strong>.
+            <div className="text-xs sm:text-sm text-slate-700 max-w-lg mx-auto pt-1 leading-relaxed">
+              {certificate.citation ? (
+                <span>{certificate.citation}</span>
+              ) : (
+                <span>
+                  has satisfactorily completed all 9 core educational training modules in the{' '}
+                  <strong className="text-slate-900 block mt-0.5">{certificate.title}</strong>{' '}
+                  with an overall examination average score of <strong className="text-emerald-800">{certificate.averageScore}%</strong>.
+                </span>
+              )}
+              {certificate.division && (
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold uppercase tracking-wider">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Division: {certificate.division}</span>
+                </div>
+              )}
             </div>
           </div>
 

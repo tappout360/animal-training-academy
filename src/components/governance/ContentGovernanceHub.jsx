@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import { 
   ShieldCheck, AlertTriangle, Clock, CheckCircle2, 
-  RotateCcw, History, FileText, Check, X, ShieldAlert 
+  RotateCcw, History, FileText, Check, X, ShieldAlert,
+  CheckSquare
 } from 'lucide-react';
 import { CONTENT_STATUSES, KNOWLEDGE_TIERS } from '../../config/constants';
 import { 
   isContentStale, transitionContentStatus, rollbackContentVersion 
 } from '../../services/GovernanceService';
+import ContentMatrixAuditModal from './ContentMatrixAuditModal';
 
 export default function ContentGovernanceHub({
   governanceItems = [],
@@ -20,6 +22,7 @@ export default function ContentGovernanceHub({
   const [safetySignoffChecked, setSafetySignoffChecked] = useState(false);
   const [reviewerName, setReviewerName] = useState('Dr. Jason Miller, DVM');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isMatrixModalOpen, setIsMatrixModalOpen] = useState(false);
 
   const filteredItems = items.filter(it => {
     if (filterStatus === 'all') return true;
@@ -70,21 +73,31 @@ export default function ContentGovernanceHub({
           Governed knowledge review workflow: Draft ➔ In Review ➔ Approved ➔ Archived. Welfare and health topics require mandatory veterinary safety signoff before release.
         </p>
 
-        {/* Filter Bar */}
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-purple-800/80 overflow-x-auto pb-1 scrollbar-none">
-          {['all', 'in_review', 'approved', 'stale', 'draft'].map((st) => (
-            <button
-              key={st}
-              onClick={() => setFilterStatus(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all whitespace-nowrap ${
-                filterStatus === st
-                  ? 'bg-white text-purple-950 shadow-sm'
-                  : 'bg-purple-800/50 text-purple-200 hover:bg-purple-800'
-              }`}
-            >
-              {st === 'in_review' ? 'In Review' : st === 'stale' ? 'Stale (>12 mo)' : st}
-            </button>
-          ))}
+        {/* Filter Bar & Matrix Button */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-purple-800/80">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {['all', 'in_review', 'approved', 'stale', 'draft'].map((st) => (
+              <button
+                key={st}
+                onClick={() => setFilterStatus(st)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all whitespace-nowrap ${
+                  filterStatus === st
+                    ? 'bg-white text-purple-950 shadow-sm'
+                    : 'bg-purple-800/50 text-purple-200 hover:bg-purple-800'
+                }`}
+              >
+                {st === 'in_review' ? 'In Review' : st === 'stale' ? 'Stale (>12 mo)' : st}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setIsMatrixModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-950 bg-emerald-300 hover:bg-emerald-200 shadow-sm transition-all shrink-0"
+          >
+            <CheckSquare className="w-4 h-4 text-emerald-800" />
+            <span>Audit 11-Species Content Matrix</span>
+          </button>
         </div>
       </div>
 
@@ -270,6 +283,12 @@ export default function ContentGovernanceHub({
           )}
         </div>
       </div>
+
+      {/* Content Matrix Audit Modal */}
+      <ContentMatrixAuditModal 
+        isOpen={isMatrixModalOpen} 
+        onClose={() => setIsMatrixModalOpen(false)} 
+      />
     </div>
   );
 }
