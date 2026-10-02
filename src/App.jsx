@@ -165,6 +165,7 @@ export default function App() {
                     activeDivision={activeDivision}
                     userRole={activeRole}
                     onOpenAiTrainer={() => setIsAiModalOpen(true)}
+                    onCompleteQuiz={handleCompleteQuiz}
                   />
                 )}
 

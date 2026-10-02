@@ -360,22 +360,23 @@ test('Detects stale content verified more than 365 days ago', () => {
 // ----------------------------------------------------
 console.log('\n--- 8. Herd Trail Quest & Progression Engine Tests ---');
 
-test('Trail Packs support both 4-H Livestock Projects and Companion Pets', () => {
-  assert.ok(TRAIL_PACKS.length >= 4, 'Must have at least 4 signature trail routes');
+test('Trail Packs support all 12 Overworld Trails (Livestock Projects and Companion Pets)', () => {
+  assert.strictEqual(TRAIL_PACKS.length, 12, 'Must have all 12 signature overworld trail routes');
   const livestockTrails = TRAIL_PACKS.filter(p => p.type === 'livestock');
   const petTrails = TRAIL_PACKS.filter(p => p.type === 'pet');
 
-  assert.ok(livestockTrails.length >= 2, 'Must include livestock project trails');
-  assert.ok(petTrails.length >= 2, 'Must include companion pet trails');
+  assert.strictEqual(livestockTrails.length, 10, 'Must include 10 4-H livestock project trails');
+  assert.strictEqual(petTrails.length, 2, 'Must include 2 companion pet trails');
 
   TRAIL_PACKS.forEach(tp => {
     assert.ok(tp.companion?.name, `Trail ${tp.id} must define companion name`);
-    assert.ok(tp.regions?.length === 4, `Trail ${tp.id} must define all 4 regions`);
-    assert.ok(tp.nodes?.length >= 3, `Trail ${tp.id} must contain nodes`);
+    assert.ok(tp.companion?.avatarEmoji, `Trail ${tp.id} must define companion emoji`);
+    assert.strictEqual(tp.regions?.length, 4, `Trail ${tp.id} must define all 4 regions`);
+    assert.ok(tp.nodes?.length >= 4, `Trail ${tp.id} must contain at least 4 nodes`);
   });
 });
 
-test('Care Challenges strictly adhere to veterinary boundary ruleset', () => {
+test('Care Challenges strictly adhere to veterinary boundary ruleset across all 12 trail packs', () => {
   let careOptionCount = 0;
   TRAIL_PACKS.forEach(pack => {
     pack.nodes.forEach(node => {
@@ -388,18 +389,33 @@ test('Care Challenges strictly adhere to veterinary boundary ruleset', () => {
       }
     });
   });
-  assert.ok(careOptionCount >= 5, 'Must audit multiple care options across trail packs');
+  assert.ok(careOptionCount >= 10, 'Must audit multiple care options across all 12 trail packs');
 });
 
-test('Cosmetics catalog is fully visual, tiered, and non-pay-to-win', () => {
-  assert.ok(ALL_COSMETICS.length >= 15, 'Must offer diverse cosmetic collection');
-  const validTypes = ['traveler_skin', 'companion_skin', 'trail_gear', 'emote', 'arrival_effect', 'habitat_decor', 'profile_flair'];
+test('Cosmetics catalog supports Upgraded Trail Equipment and Unlockable Companion Pets', () => {
+  assert.ok(ALL_COSMETICS.length >= 25, 'Must offer diverse cosmetic collection');
+  const validTypes = [
+    'traveler_skin', 'companion_skin', 'companion_pose', 'companion_pet',
+    'trail_gear', 'emote', 'arrival_effect', 'habitat_decor', 'profile_flair'
+  ];
   const validRarities = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'];
+
+  const pets = ALL_COSMETICS.filter(c => c.type === 'companion_pet');
+  const equipment = ALL_COSMETICS.filter(c => c.type === 'trail_gear');
+
+  assert.ok(pets.length >= 10, 'Must offer at least 10 unlockable companion pets');
+  assert.ok(equipment.length >= 10, 'Must offer at least 10 upgraded trail equipment items');
 
   ALL_COSMETICS.forEach(c => {
     assert.ok(validTypes.includes(c.type), `Invalid cosmetic type: ${c.type}`);
     assert.ok(validRarities.includes(c.rarity), `Invalid rarity: ${c.rarity}`);
     assert.ok(c.unlockCriteria, `Must specify educational unlock criteria for ${c.name}`);
+    if (c.type === 'companion_pet') {
+      assert.ok(c.avatarEmoji, `Companion pet ${c.name} must have an avatar emoji`);
+    }
+    if (c.type === 'trail_gear') {
+      assert.ok(c.gearEmoji, `Trail gear ${c.name} must have a gear emoji`);
+    }
   });
 });
 
@@ -439,6 +455,30 @@ test('TrailQuestEngine advances miles, manages supplies, updates bond, and unloc
   });
 
   assert.ok(mile50Result.updatedState.unlockedCosmeticIds.includes('outfit_clover_scout'), 'Mile 50 must unlock Clover Scout outfit');
+  assert.ok(mile50Result.updatedState.unlockedCosmeticIds.includes('pet_pip_hamster'), 'Mile 50 must also have unlocked Mile 25 pet Pip the Hamster');
+});
+
+test('TrailQuestEngine supports Daily Trail Streak Chest rewards and milestones', () => {
+  const state = TrailQuestEngine.loadState('test_quest_player_streak');
+  const claimResult = TrailQuestEngine.claimDailyStreak(state);
+
+  assert.strictEqual(claimResult.alreadyClaimed, false);
+  assert.strictEqual(claimResult.updatedState.dailyStreak.count, 1);
+  assert.ok(claimResult.rewardSummary.includes('+25 Feed'));
+
+  // Immediate second claim on same day should report alreadyClaimed: true
+  const secondClaim = TrailQuestEngine.claimDailyStreak(claimResult.updatedState);
+  assert.strictEqual(secondClaim.alreadyClaimed, true);
+});
+
+test('TrailQuestEngine supports equipping outfits, upgraded gear, and pets', () => {
+  const state = TrailQuestEngine.loadState('test_equip_player');
+  // pet_barnaby_jr and gear_basic_lead are unlocked by default
+  const equippedState = TrailQuestEngine.equipCosmetic(state, 'companion_pet', 'pet_barnaby_jr');
+  assert.strictEqual(equippedState.equippedCosmetics.companion_pet, 'pet_barnaby_jr');
+
+  const equippedGear = TrailQuestEngine.equipCosmetic(equippedState, 'trail_gear', 'gear_basic_lead');
+  assert.strictEqual(equippedGear.equippedCosmetics.trail_gear, 'gear_basic_lead');
 });
 
 test('TrailQuestEngine supports Coach Signal Path beacons', () => {

@@ -1,10 +1,11 @@
 // WarrenWise Animal Academy - Herd Trail Quest
 // Multi-Mode Educational Challenge Modal with Strict Care Boundaries & AI Hints
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, CheckCircle2, AlertCircle, Bot, Sparkles, 
-  HelpCircle, ChevronRight, Award, Compass, Heart, Shield
+  HelpCircle, ChevronRight, Award, Compass, Heart, Shield,
+  RotateCcw, CheckSquare, Square, Volume2, Mic
 } from 'lucide-react';
 import FairDaySimFinale from './FairDaySimFinale';
 
@@ -19,8 +20,24 @@ export default function ChallengeModal({
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showAiHint, setShowAiHint] = useState(false);
-  const [userSequence, setUserSequence] = useState([]);
-  const [echoSubmitted, setEchoSubmitted] = useState(false);
+  
+  // Mystery Stall: Progressive Clues
+  const [revealedClueCount, setRevealedClueCount] = useState(1);
+
+  // Oral Prompt / Echo Answer state
+  const [oralText, setOralText] = useState('');
+  const [checkedRubricIndices, setCheckedRubricIndices] = useState([]);
+  const [oralDelivered, setOralDelivered] = useState(false);
+
+  // Showmanship Sequence interactive ordering
+  const [orderedStepIds, setOrderedStepIds] = useState([]);
+
+  useEffect(() => {
+    if (node?.sequenceItems) {
+      // Scramble or initialize
+      setOrderedStepIds([]);
+    }
+  }, [node]);
 
   if (!node) return null;
 
@@ -50,26 +67,71 @@ export default function ChallengeModal({
     setSelectedOptionIndex(idx);
   };
 
+  const handleAddSequenceStep = (item) => {
+    if (hasSubmitted) return;
+    if (!orderedStepIds.includes(item.step)) {
+      setOrderedStepIds([...orderedStepIds, item.step]);
+    }
+  };
+
+  const handleResetSequence = () => {
+    if (hasSubmitted) return;
+    setOrderedStepIds([]);
+  };
+
+  const handleToggleRubric = (idx) => {
+    if (checkedRubricIndices.includes(idx)) {
+      setCheckedRubricIndices(checkedRubricIndices.filter(i => i !== idx));
+    } else {
+      setCheckedRubricIndices([...checkedRubricIndices, idx]);
+    }
+  };
+
   const handleSubmitAnswer = () => {
-    if (selectedOptionIndex === null && !node.sequenceItems && !node.expectedAnswer) return;
+    if (node.options && selectedOptionIndex === null) return;
+    if (node.sequenceItems && orderedStepIds.length < node.sequenceItems.length) return;
+    if (node.expectedAnswer && !oralDelivered) {
+      setOralDelivered(true);
+      return;
+    }
     setHasSubmitted(true);
   };
 
   const handleFinish = () => {
-    const selectedOption = node.options ? node.options[selectedOptionIndex] : null;
-    const isCorrect = selectedOption ? !!selectedOption.isCorrect : true;
+    let isCorrect = true;
+    let conditionDelta = 10;
+    let suppliesDelta = {};
+    let bondXpDelta = 25;
+
+    if (node.options && selectedOptionIndex !== null) {
+      const selectedOption = node.options[selectedOptionIndex];
+      isCorrect = !!selectedOption.isCorrect;
+      conditionDelta = selectedOption.effect?.condition ?? (isCorrect ? 10 : -5);
+      suppliesDelta = selectedOption.effect?.supplies ?? {};
+      bondXpDelta = selectedOption.effect?.bond ?? (isCorrect ? 25 : 10);
+    } else if (node.sequenceItems) {
+      // Check if ordered in natural 1, 2, 3...
+      const expected = node.sequenceItems.map(item => item.step);
+      isCorrect = orderedStepIds.every((val, idx) => val === expected[idx]);
+      conditionDelta = isCorrect ? 15 : -5;
+      bondXpDelta = isCorrect ? 35 : 15;
+    } else if (node.expectedAnswer) {
+      isCorrect = checkedRubricIndices.length >= (node.rubric?.length || 1);
+      conditionDelta = 15;
+      bondXpDelta = 40;
+    }
 
     onComplete({
       nodeId: node.id,
       mile: node.mile,
       isCorrect,
-      conditionDelta: selectedOption?.effect?.condition || (isCorrect ? 10 : -5),
-      suppliesDelta: selectedOption?.effect?.supplies || {},
-      bondXpDelta: selectedOption?.effect?.bond || (isCorrect ? 25 : 10)
+      conditionDelta,
+      suppliesDelta,
+      bondXpDelta
     });
   };
 
-  const selectedOpt = node.options ? node.options[selectedOptionIndex] : null;
+  const selectedOpt = node.options && selectedOptionIndex !== null ? node.options[selectedOptionIndex] : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
@@ -102,14 +164,24 @@ export default function ChallengeModal({
         {/* Mystery Clues (if applicable) */}
         {node.clues && (
           <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-2">
-            <div className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              <span>Trail Investigation Clues:</span>
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-600" />
+                <span>Trail Investigation Clues ({revealedClueCount} of {node.clues.length}):</span>
+              </div>
+              {revealedClueCount < node.clues.length && (
+                <button
+                  onClick={() => setRevealedClueCount(prev => Math.min(node.clues.length, prev + 1))}
+                  className="text-[10px] font-bold text-amber-800 bg-amber-200/60 hover:bg-amber-200 px-2 py-0.5 rounded-lg transition"
+                >
+                  Reveal Next Clue
+                </button>
+              )}
             </div>
-            <ul className="space-y-1 text-xs text-amber-800">
-              {node.clues.map((c, i) => (
-                <li key={i} className="flex items-start gap-1.5">
-                  <span className="font-bold">•</span>
+            <ul className="space-y-1.5 text-xs text-amber-900">
+              {node.clues.slice(0, revealedClueCount).map((c, i) => (
+                <li key={i} className="flex items-start gap-1.5 animate-fadeIn">
+                  <span className="font-bold text-amber-700">•</span>
                   <span>{c}</span>
                 </li>
               ))}
@@ -122,41 +194,124 @@ export default function ChallengeModal({
           {node.prompt}
         </div>
 
-        {/* Showmanship Sequence Challenge */}
+        {/* Showmanship Sequence Interactive Ordering */}
         {node.sequenceItems && (
-          <div className="space-y-2">
-            <div className="text-xs text-slate-500 italic mb-1">
-              Official standardized procedure order:
-            </div>
-            <div className="space-y-2">
-              {node.sequenceItems.map((item) => (
-                <div 
-                  key={item.step} 
-                  className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-950 flex items-center gap-3"
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span>Click items in the correct order to place them in sequence:</span>
+              {orderedStepIds.length > 0 && !hasSubmitted && (
+                <button
+                  onClick={handleResetSequence}
+                  className="flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-slate-800"
                 >
-                  <span className="w-6 h-6 rounded-full bg-emerald-700 text-white flex items-center justify-center text-xs font-black shrink-0">
-                    {item.step}
-                  </span>
-                  <span>{item.label}</span>
-                </div>
-              ))}
+                  <RotateCcw className="w-3 h-3" /> Reset Order
+                </button>
+              )}
             </div>
+
+            {/* Placed Sequence Slots */}
+            <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl min-h-[100px]">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                Your Procedure Order ({orderedStepIds.length} of {node.sequenceItems.length} steps placed):
+              </div>
+              {orderedStepIds.map((stepNum, idx) => {
+                const item = node.sequenceItems.find(i => i.step === stepNum);
+                return (
+                  <div 
+                    key={idx}
+                    className="p-2.5 bg-emerald-50 border border-emerald-300 rounded-xl text-xs font-semibold text-emerald-950 flex items-center gap-2.5 animate-fadeIn"
+                  >
+                    <span className="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center text-xs font-black shrink-0">
+                      {idx + 1}
+                    </span>
+                    <span>{item?.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Available Steps Tray */}
+            {!hasSubmitted && orderedStepIds.length < node.sequenceItems.length && (
+              <div className="space-y-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Select Next Step:
+                </div>
+                {node.sequenceItems
+                  .filter(item => !orderedStepIds.includes(item.step))
+                  .map(item => (
+                    <button
+                      key={item.step}
+                      onClick={() => handleAddSequenceStep(item)}
+                      className="w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs text-slate-700 font-medium transition flex items-center gap-2"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
+                        +
+                      </span>
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Oral Prompt Challenge */}
+        {/* Oral Prompt / Echo Answer Interactive Defense */}
         {node.expectedAnswer && (
           <div className="space-y-3">
-            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-2">
-              <div className="text-xs font-bold text-blue-900">Official Expected Judge Response:</div>
-              <p className="text-xs text-blue-800 font-medium italic">"{node.expectedAnswer}"</p>
-            </div>
-            {node.rubric && (
-              <div className="text-xs text-slate-500 space-y-1">
-                <span className="font-bold text-slate-700">Judge Evaluation Rubric:</span>
-                <ul className="list-disc pl-5 space-y-0.5">
-                  {node.rubric.map((r, i) => <li key={i}>{r}</li>)}
-                </ul>
+            {!oralDelivered ? (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-600 block">
+                  Speak or type your oral defense response to the judge:
+                </label>
+                <textarea
+                  value={oralText}
+                  onChange={(e) => setOralText(e.target.value)}
+                  placeholder="e.g. Judge, rabbits have 4 toenails on each rear foot..."
+                  rows={3}
+                  className="w-full p-3 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-emerald-600"
+                />
+              </div>
+            ) : (
+              <div className="space-y-3 animate-fadeIn">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
+                  <div className="font-bold text-slate-500 text-[10px] uppercase tracking-wider">Your Spoken Answer:</div>
+                  <p className="italic font-medium">"{oralText || '(Spoken directly to the judge)'}"</p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-2">
+                  <div className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                    <Volume2 className="w-4 h-4 text-blue-600" />
+                    <span>Official Standard Judge Response:</span>
+                  </div>
+                  <p className="text-xs text-blue-800 font-medium italic">"{node.expectedAnswer}"</p>
+                </div>
+
+                {node.rubric && (
+                  <div className="p-3.5 rounded-2xl bg-white border border-slate-200 space-y-2">
+                    <div className="text-xs font-bold text-slate-800">
+                      Judge Self-Evaluation Rubric (Check all that apply):
+                    </div>
+                    <div className="space-y-1.5">
+                      {node.rubric.map((r, i) => {
+                        const isChecked = checkedRubricIndices.includes(i);
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => handleToggleRubric(i)}
+                            className="w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 text-xs text-slate-700 font-medium transition"
+                          >
+                            {isChecked ? (
+                              <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0" />
+                            ) : (
+                              <Square className="w-4 h-4 text-slate-400 shrink-0" />
+                            )}
+                            <span className={isChecked ? 'font-bold text-emerald-900' : ''}>{r}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -226,7 +381,7 @@ export default function ChallengeModal({
               <span>WarrenWise AI Trail Coach Hint</span>
             </div>
             <p className="text-[11px] leading-relaxed">
-              Always prioritize your companion animal’s natural physiological needs: fresh hydration, digestible fiber, stress reduction, and safe certified gear!
+              Always prioritize your companion animal’s natural physiological needs: fresh hydration, digestible fiber, calm stress reduction, and safe certified gear!
             </p>
           </div>
         )}
@@ -242,13 +397,25 @@ export default function ChallengeModal({
           </button>
 
           {!hasSubmitted ? (
-            <button
-              onClick={handleSubmitAnswer}
-              disabled={selectedOptionIndex === null && !node.sequenceItems && !node.expectedAnswer}
-              className="w-full sm:w-auto px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-xs transition"
-            >
-              Submit Answer
-            </button>
+            node.expectedAnswer && !oralDelivered ? (
+              <button
+                onClick={handleSubmitAnswer}
+                className="w-full sm:w-auto px-6 py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-xs transition"
+              >
+                Deliver Oral Defense
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmitAnswer}
+                disabled={
+                  (node.options && selectedOptionIndex === null) ||
+                  (node.sequenceItems && orderedStepIds.length < node.sequenceItems.length)
+                }
+                className="w-full sm:w-auto px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-xs transition"
+              >
+                Submit Answer
+              </button>
+            )
           ) : (
             <button
               onClick={handleFinish}

@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { 
   Shirt, Sparkles, Wand2, Smile, Wind, Home, 
-  Lock, CheckCircle2, Shield, Eye, Award
+  Lock, CheckCircle2, Shield, Eye, Award, Heart, Package, Wrench
 } from 'lucide-react';
 import { ALL_COSMETICS, COSMETIC_TYPES, COSMETIC_RARITIES } from '../../data/game/cosmeticsCatalog';
 import { TrailQuestEngine } from '../../services/TrailQuestEngine';
@@ -12,7 +12,8 @@ import { TrailQuestEngine } from '../../services/TrailQuestEngine';
 const TYPE_ICON_MAP = {
   traveler_skin: Shirt,
   companion_skin: Sparkles,
-  trail_gear: Wand2,
+  companion_pet: Heart,
+  trail_gear: Package,
   emote: Smile,
   arrival_effect: Wind,
   habitat_decor: Home
@@ -65,14 +66,35 @@ export default function CosmeticsLocker({
 
       {/* Equipped Showcase Strip */}
       <div className="p-4 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-2xl flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-2xl border border-white/20">
-            ✨
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-2xl border border-white/20">
+              {ALL_COSMETICS.find(c => c.id === equipped.companion_pet)?.avatarEmoji || '🐾'}
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-purple-300 font-bold">Equipped Companion Pet</div>
+              <div className="text-sm font-black text-white">
+                {ALL_COSMETICS.find(c => c.id === equipped.companion_pet)?.name || 'Barnaby Jr. Lop'}
+              </div>
+            </div>
           </div>
+
+          <div className="h-8 w-px bg-white/15 hidden md:block" />
+
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-purple-300 font-bold">Currently Equipped Look</div>
-            <div className="text-sm font-black text-white">
-              {ALL_COSMETICS.find(c => c.id === equipped.traveler_skin)?.name || 'Trail Blazer'} • {ALL_COSMETICS.find(c => c.id === equipped.companion_skin)?.name || 'Natural Coat'}
+            <div className="text-[10px] uppercase tracking-wider text-purple-300 font-bold">Equipped Trail Gear</div>
+            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+              <span>{ALL_COSMETICS.find(c => c.id === equipped.trail_gear)?.gearEmoji || '🎒'}</span>
+              <span>{ALL_COSMETICS.find(c => c.id === equipped.trail_gear)?.name || 'Sturdy Lead Line'}</span>
+            </div>
+          </div>
+
+          <div className="h-8 w-px bg-white/15 hidden md:block" />
+
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-purple-300 font-bold">Traveler Outfit</div>
+            <div className="text-xs font-bold text-white">
+              {ALL_COSMETICS.find(c => c.id === equipped.traveler_skin)?.name || 'Trail Blazer'}
             </div>
           </div>
         </div>
@@ -121,15 +143,26 @@ export default function CosmeticsLocker({
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${
                     isUnlocked ? `bg-gradient-to-br ${rarity.color} text-white` : 'bg-slate-200 text-slate-400'
                   }`}>
-                    {isUnlocked ? <IconComp className="w-5 h-5" /> : <Lock className="w-4 h-4" />}
+                    {isUnlocked ? (
+                      item.avatarEmoji || item.gearEmoji || <IconComp className="w-5 h-5" />
+                    ) : (
+                      <Lock className="w-4 h-4" />
+                    )}
                   </div>
 
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${rarity.bg}`}>
-                    {rarity.label}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {item.species && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                        {item.species}
+                      </span>
+                    )}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${rarity.bg}`}>
+                      {rarity.label}
+                    </span>
+                  </div>
                 </div>
 
                 <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">

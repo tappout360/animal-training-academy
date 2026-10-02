@@ -7,6 +7,7 @@ import {
   Package, Wrench, AlertTriangle, Compass, Award
 } from 'lucide-react';
 import { TrailQuestEngine } from '../../services/TrailQuestEngine';
+import { ALL_COSMETICS } from '../../data/game/cosmeticsCatalog';
 
 export default function PartyConditionCard({
   questState,
@@ -18,6 +19,10 @@ export default function PartyConditionCard({
   const companion = trailPack.companion;
   const bond = questState.herdBond;
   const bondPercent = (bond.xp % 100);
+
+  const equipped = questState.equippedCosmetics || {};
+  const equippedPet = ALL_COSMETICS.find(c => c.id === equipped.companion_pet);
+  const equippedGear = ALL_COSMETICS.find(c => c.id === equipped.trail_gear);
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-4">
@@ -40,6 +45,21 @@ export default function PartyConditionCard({
             <p className="text-xs text-emerald-100/90 mt-0.5 max-w-md line-clamp-1">
               {companion.lore}
             </p>
+            {/* Equipped Pet & Upgraded Gear Badges */}
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {equippedPet && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-white/10 px-2.5 py-0.5 rounded-full border border-white/15 text-pink-200">
+                  <span>{equippedPet.avatarEmoji || '🐾'}</span>
+                  <span>Companion: {equippedPet.name}</span>
+                </span>
+              )}
+              {equippedGear && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-white/10 px-2.5 py-0.5 rounded-full border border-white/15 text-amber-200">
+                  <span>{equippedGear.gearEmoji || '🎒'}</span>
+                  <span>Gear: {equippedGear.name}</span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

@@ -34,6 +34,7 @@ export const DEFAULT_QUEST_STATE = {
   equippedCosmetics: {
     traveler_skin: 'outfit_trail_blazer',
     companion_skin: 'comp_classic_fur',
+    companion_pet: 'pet_barnaby_jr',
     trail_gear: 'gear_basic_lead',
     emote: 'emote_hat_tip',
     arrival_effect: 'arrival_clover_breeze',
@@ -42,11 +43,16 @@ export const DEFAULT_QUEST_STATE = {
   unlockedCosmeticIds: [
     'outfit_trail_blazer',
     'comp_classic_fur',
+    'pet_barnaby_jr',
     'gear_basic_lead',
     'emote_hat_tip',
     'decor_pine_bench',
     'arrival_clover_breeze'
   ],
+  dailyStreak: {
+    count: 1,
+    lastClaimDate: null
+  },
   coachSignals: [
     {
       id: 'cs_welcome',
@@ -153,17 +159,34 @@ export class TrailQuestEngine {
     }
     updated.herdBond = currentBond;
 
-    // Check for new cosmetic unlocks
+    // Check for new cosmetic unlocks (skins, pets, upgraded equipment, emotes, decor)
     const unlockedNow = [];
     ALL_COSMETICS.forEach(cosmetic => {
       if (updated.unlockedCosmeticIds.includes(cosmetic.id)) return;
 
       let shouldUnlock = false;
+      // Milestones & Distance
       if (cosmetic.id === 'outfit_clover_scout' && updated.currentMile >= 50) shouldUnlock = true;
       if (cosmetic.id === 'outfit_barn_pioneer' && updated.herdBond.xp >= 300) shouldUnlock = true;
       if (cosmetic.id === 'comp_sunset_bay' && updated.herdBond.level >= 5) shouldUnlock = true;
       if (cosmetic.id === 'emote_bunny_hop' && updated.currentMile >= 50) shouldUnlock = true;
       if (cosmetic.id === 'decor_wind_chime' && updated.herdBond.level >= 8) shouldUnlock = true;
+
+      // Unlockable Pets
+      if (cosmetic.id === 'pet_pip_hamster' && updated.currentMile >= 25) shouldUnlock = true;
+      if (cosmetic.id === 'pet_luna_kitten' && updated.herdBond.level >= 3) shouldUnlock = true;
+      if (cosmetic.id === 'pet_bramble_kid' && updated.herdBond.level >= 5) shouldUnlock = true;
+      if (cosmetic.id === 'pet_copper_pup' && updated.currentMile >= 55) shouldUnlock = true;
+      if (cosmetic.id === 'pet_buttercup_calf' && updated.herdBond.level >= 7) shouldUnlock = true;
+      if (cosmetic.id === 'pet_chester_foal' && updated.currentMile >= 85) shouldUnlock = true;
+      if (cosmetic.id === 'pet_andy_alpaca' && updated.completedNodeIds.length >= 8) shouldUnlock = true;
+
+      // Upgraded Trail Equipment
+      if (cosmetic.id === 'gear_brass_flask' && isCorrect && updated.currentMile >= 15) shouldUnlock = true;
+      if (cosmetic.id === 'gear_solar_fan' && updated.currentMile >= 25) shouldUnlock = true;
+      if (cosmetic.id === 'gear_gilded_brush' && updated.herdBond.level >= 6) shouldUnlock = true;
+      if (cosmetic.id === 'gear_jeweled_halter' && updated.completedNodeIds.length >= 6) shouldUnlock = true;
+      if (cosmetic.id === 'gear_leather_caddy' && updated.supplies.grooming >= 90) shouldUnlock = true;
 
       if (shouldUnlock) {
         updated.unlockedCosmeticIds = [...updated.unlockedCosmeticIds, cosmetic.id];
@@ -178,7 +201,7 @@ export class TrailQuestEngine {
   }
 
   /**
-   * Equips a cosmetic item.
+   * Equips a cosmetic item (skin, equipment, pet, emote, decor).
    */
   static equipCosmetic(state, type, cosmeticId) {
     if (!state.unlockedCosmeticIds.includes(cosmeticId)) {
@@ -190,6 +213,54 @@ export class TrailQuestEngine {
         ...state.equippedCosmetics,
         [type]: cosmeticId
       }
+    };
+  }
+
+  /**
+   * Claims daily trail streak reward chest (feed, water, bedding, bond XP).
+   */
+  static claimDailyStreak(state) {
+    const today = new Date().toISOString().split('T')[0];
+    const streak = state.dailyStreak || { count: 1, lastClaimDate: null };
+
+    if (streak.lastClaimDate === today) {
+      return {
+        alreadyClaimed: true,
+        updatedState: state,
+        rewardSummary: 'You have already opened today’s Trail Care Chest! Return tomorrow to keep your streak alive.'
+      };
+    }
+
+    const nextCount = streak.lastClaimDate ? streak.count + 1 : 1;
+    const updated = {
+      ...state,
+      dailyStreak: {
+        count: nextCount,
+        lastClaimDate: today
+      },
+      supplies: {
+        ...state.supplies,
+        feed: Math.min(100, state.supplies.feed + 25),
+        water: Math.min(100, state.supplies.water + 25),
+        bedding: Math.min(100, state.supplies.bedding + 15)
+      },
+      herdBond: {
+        ...state.herdBond,
+        xp: state.herdBond.xp + 50
+      }
+    };
+
+    // Streak milestone unlock
+    const newUnlocks = [];
+    if (nextCount >= 5 && !updated.unlockedCosmeticIds.includes('gear_solar_lantern')) {
+      updated.unlockedCosmeticIds = [...updated.unlockedCosmeticIds, 'gear_solar_lantern'];
+      newUnlocks.push('gear_solar_lantern');
+    }
+
+    return {
+      alreadyClaimed: false,
+      updatedState: updated,
+      rewardSummary: `Day ${nextCount} Streak! Received +25 Feed, +25 Water, +15 Bedding, and +50 Herd Bond XP!${nextCount >= 5 ? ' 🌟 Unlocked Solar Barn Lantern Pack!' : ''}`
     };
   }
 

@@ -1,13 +1,16 @@
 // WarrenWise Youth Animal Training Academy - Signature Game Mode
 // HERD TRAIL QUEST: Oregon Trail-Style Learning Journey & Fortnite-Style Cosmetic Collection
+// Multi-Species (12 Overworld Trails), Upgraded Equipment & Pet Rewards, Safe Care Boundaries
 
 import React, { useState, useEffect } from 'react';
 import { 
   Compass, Map, Sparkles, Home, Award, Heart, 
-  MapPin, Shield, RotateCcw, AlertTriangle, ChevronRight, Bot
+  MapPin, Shield, RotateCcw, AlertTriangle, ChevronRight, Bot,
+  Gift, Flame, Eye, Volume2, CheckCircle2, Lock
 } from 'lucide-react';
 import PartyConditionCard from './PartyConditionCard';
 import TrailMapView from './TrailMapView';
+import OverworldMapView from './OverworldMapView';
 import ChallengeModal from './ChallengeModal';
 import CosmeticsLocker from './CosmeticsLocker';
 import HabitatShowcase from './HabitatShowcase';
@@ -19,14 +22,19 @@ export default function HerdTrailQuest({
   learner = { id: 'learner_current', handle: 'CloverChampion42', division: 'junior' },
   activeDivision = 'junior',
   userRole = 'youth',
-  onOpenAiTrainer
+  onOpenAiTrainer,
+  onCompleteQuiz
 }) {
   const [questState, setQuestState] = useState(() => TrailQuestEngine.loadState(learner.id));
-  const [activeTab, setActiveTab] = useState('trail'); // 'trail' | 'locker' | 'habitat' | 'packs'
+  const [activeTab, setActiveTab] = useState('trail'); // 'trail' | 'overworld' | 'locker' | 'habitat'
   const [activeNode, setActiveNode] = useState(null);
   const [isCoachSignalModalOpen, setIsCoachSignalModalOpen] = useState(false);
-  const [packFilter, setPackFilter] = useState('all'); // 'all' | 'livestock' | 'pet'
   const [celebrationCosmetic, setCelebrationCosmetic] = useState(null);
+  const [streakModalData, setStreakModalData] = useState(null);
+
+  // Accessibility Toggles
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [highContrast, setHighContrast] = useState(false);
 
   // Sync state whenever learner changes
   useEffect(() => {
@@ -60,6 +68,19 @@ export default function HerdTrailQuest({
     TrailQuestEngine.saveState(learner.id, updatedState);
     setActiveNode(null);
 
+    // Sync to Academy Mastery Engine & 4-H Badges
+    if (onCompleteQuiz && isCorrect) {
+      try {
+        onCompleteQuiz({
+          score: 100,
+          passed: true,
+          answers: [{ questionId: nodeId, isCorrect: true }]
+        });
+      } catch (err) {
+        console.warn('Mastery sync callback notice:', err);
+      }
+    }
+
     if (newlyUnlockedCosmetics.length > 0) {
       setCelebrationCosmetic(newlyUnlockedCosmetics[0]);
     }
@@ -89,9 +110,61 @@ export default function HerdTrailQuest({
     setActiveTab('trail');
   };
 
+  const handleClaimDailyStreak = () => {
+    const result = TrailQuestEngine.claimDailyStreak(questState);
+    setQuestState(result.updatedState);
+    TrailQuestEngine.saveState(learner.id, result.updatedState);
+    setStreakModalData(result);
+  };
+
+  const streakCount = questState.dailyStreak?.count || 1;
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className={`max-w-7xl mx-auto space-y-6 ${highContrast ? 'contrast-125' : ''} ${reducedMotion ? 'motion-reduce' : ''}`}>
       
+      {/* Top Accessibility & Streak Ribbon */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 bg-slate-900 text-white rounded-2xl text-xs">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 font-bold text-amber-400">
+            <Flame className="w-4 h-4 fill-amber-400" />
+            <span>Day {streakCount} Daily Trail Streak</span>
+          </div>
+
+          <button
+            onClick={handleClaimDailyStreak}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] transition shadow-xs"
+          >
+            <Gift className="w-3.5 h-3.5" />
+            <span>Open Daily Care Chest</span>
+          </button>
+        </div>
+
+        {/* Accessibility Toggles */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setReducedMotion(!reducedMotion)}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition border ${
+              reducedMotion 
+                ? 'bg-emerald-600 text-white border-emerald-400' 
+                : 'bg-white/10 text-slate-300 border-white/15 hover:bg-white/20'
+            }`}
+          >
+            {reducedMotion ? '✓ Reduced Motion' : 'Reduced Motion'}
+          </button>
+
+          <button
+            onClick={() => setHighContrast(!highContrast)}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition border ${
+              highContrast 
+                ? 'bg-amber-500 text-slate-950 border-amber-300' 
+                : 'bg-white/10 text-slate-300 border-white/15 hover:bg-white/20'
+            }`}
+          >
+            {highContrast ? '✓ High Contrast' : 'High Contrast'}
+          </button>
+        </div>
+      </div>
+
       {/* Game Mode Navigation Ribbon */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2.5 rounded-3xl border border-slate-200 shadow-2xs">
         
@@ -110,6 +183,18 @@ export default function HerdTrailQuest({
           </button>
 
           <button
+            onClick={() => setActiveTab('overworld')}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
+              activeTab === 'overworld'
+                ? 'bg-teal-700 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Compass className="w-4 h-4" />
+            <span>12-Region Overworld Map</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('locker')}
             className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
               activeTab === 'locker'
@@ -118,7 +203,7 @@ export default function HerdTrailQuest({
             }`}
           >
             <Sparkles className="w-4 h-4" />
-            <span>Cosmetics Locker</span>
+            <span>Equipped Gear, Pets &amp; Skins</span>
           </button>
 
           <button
@@ -131,18 +216,6 @@ export default function HerdTrailQuest({
           >
             <Home className="w-4 h-4" />
             <span>Campsite Habitat</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('packs')}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
-              activeTab === 'packs'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <Compass className="w-4 h-4" />
-            <span>Switch Trail Pack</span>
           </button>
         </div>
 
@@ -188,6 +261,13 @@ export default function HerdTrailQuest({
         </div>
       )}
 
+      {activeTab === 'overworld' && (
+        <OverworldMapView
+          questState={questState}
+          onSelectTrailPack={handleSelectTrailPack}
+        />
+      )}
+
       {activeTab === 'locker' && (
         <CosmeticsLocker
           questState={questState}
@@ -202,84 +282,7 @@ export default function HerdTrailQuest({
         />
       )}
 
-      {activeTab === 'packs' && (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full inline-block mb-1">
-                Multi-Species Trail Selector
-              </span>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900">
-                Choose Your Next Animal Adventure Trail
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Journey with 4-H livestock project animals or beloved companion pets.
-              </p>
-            </div>
-
-            {/* Livestock vs Pet Filter */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-              {['all', 'livestock', 'pet'].map(f => (
-                <button
-                  key={f}
-                  onClick={() => setPackFilter(f)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition ${
-                    packFilter === f ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  {f === 'all' ? 'All Trails' : f === 'livestock' ? 'Livestock Projects' : 'Companion Pets'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {getAvailableTrailPacks(packFilter).map(pack => {
-              const isSelected = pack.id === questState.activeTrailPackId;
-              return (
-                <div
-                  key={pack.id}
-                  onClick={() => handleSelectTrailPack(pack.id)}
-                  className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
-                    isSelected
-                      ? 'bg-emerald-50/80 border-emerald-500 shadow-sm ring-2 ring-emerald-500/20'
-                      : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-emerald-300'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-3xl shadow-xs">
-                        {pack.companion.avatarEmoji}
-                      </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                        pack.type === 'pet' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'
-                      }`}>
-                        {pack.type === 'pet' ? 'Pet Trail' : 'Livestock'}
-                      </span>
-                    </div>
-
-                    <h4 className="text-base font-bold text-slate-900">{pack.name}</h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{pack.subtitle}</p>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 font-medium">Companion: <strong>{pack.companion.name}</strong></span>
-                    <button
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                        isSelected ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      {isSelected ? 'Active Trail' : 'Start Journey'}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Active Challenge Modal */}
+      {/* Interactive Challenge Modal */}
       {activeNode && (
         <ChallengeModal
           node={activeNode}
@@ -292,42 +295,71 @@ export default function HerdTrailQuest({
       )}
 
       {/* Coach Signal Modal */}
-      <CoachSignalModal
-        isOpen={isCoachSignalModalOpen}
-        onClose={() => setIsCoachSignalModalOpen(false)}
-        nodes={currentTrailPack.nodes}
-        coachSignals={questState.coachSignals}
-        onAddSignal={handleAddCoachSignal}
-      />
+      {isCoachSignalModalOpen && (
+        <CoachSignalModal
+          trailPack={currentTrailPack}
+          onAddSignal={handleAddCoachSignal}
+          onClose={() => setIsCoachSignalModalOpen(false)}
+        />
+      )}
 
-      {/* Cosmetic Unlock Celebration Banner */}
+      {/* Daily Streak Reward Chest Modal */}
+      {streakModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl mx-auto shadow-inner">
+              🎁
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-900">
+                {streakModalData.alreadyClaimed ? 'Today’s Chest Opened' : 'Daily Trail Care Chest!'}
+              </h3>
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                {streakModalData.rewardSummary}
+              </p>
+            </div>
+            <button
+              onClick={() => setStreakModalData(null)}
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-xs"
+            >
+              Continue Trail Adventure
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Celebration Modal for Unlocked Cosmetic (Skin, Pet, or Upgraded Equipment) */}
       {celebrationCosmetic && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white p-5 rounded-3xl shadow-2xl border-2 border-emerald-400 max-w-sm animate-bounce-once space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider">
-              <Sparkles className="w-4 h-4 text-yellow-300" />
-              <span>Cosmetic Unlocked!</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center text-3xl mx-auto shadow-lg">
+              {celebrationCosmetic.avatarEmoji || celebrationCosmetic.gearEmoji || '✨'}
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full inline-block mb-1">
+                New Learning Reward Unlocked!
+              </div>
+              <h3 className="text-xl font-black text-slate-900">{celebrationCosmetic.name}</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{celebrationCosmetic.description}</p>
+            </div>
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-600">
+              Criteria: {celebrationCosmetic.unlockCriteria}
             </div>
             <button
               onClick={() => setCelebrationCosmetic(null)}
-              className="text-slate-400 hover:text-white"
+              className="w-full py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition shadow-xs"
             >
-              ✕
+              Awesome! Add to Locker
             </button>
           </div>
-          <h4 className="font-bold text-base text-white">{celebrationCosmetic.name}</h4>
-          <p className="text-xs text-slate-300 leading-relaxed">{celebrationCosmetic.description}</p>
-          <button
-            onClick={() => {
-              setActiveTab('locker');
-              setCelebrationCosmetic(null);
-            }}
-            className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition mt-2"
-          >
-            Open Locker &amp; Equip
-          </button>
         </div>
       )}
+
+      {/* Permanent Independent Educational Disclaimer */}
+      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs text-slate-500 leading-relaxed font-medium">
+        WarrenWise Animal Academy &amp; Herd Trail Quest are independent educational simulations. 
+        Not affiliated with, endorsed by, or representing the National 4-H Council, USDA NIFA, ARBA, or YQCA. Practice awards are non-official mastery recognitions.
+      </div>
 
     </div>
   );
