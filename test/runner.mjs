@@ -493,6 +493,90 @@ test('TrailQuestEngine supports Coach Signal Path beacons', () => {
   assert.ok(withBeacon.coachSignals.some(s => s.targetNodeId === 'rb_node_5' && s.coachName === 'Coach Sarah'));
 });
 
+test('TrailQuestEngine scales progressive difficulty tiers across regions and levels', () => {
+  assert.strictEqual(TrailQuestEngine.getDifficultyTier(10, 1, 'junior').tier, 1);
+  assert.strictEqual(TrailQuestEngine.getDifficultyTier(35, 2, 'junior').tier, 2);
+  assert.strictEqual(TrailQuestEngine.getDifficultyTier(65, 4, 'junior').tier, 3);
+  assert.strictEqual(TrailQuestEngine.getDifficultyTier(90, 8, 'senior').tier, 4);
+
+  // Cloverbud protected soft mode
+  assert.strictEqual(TrailQuestEngine.getDifficultyTier(95, 8, 'cloverbud').tier, 1);
+});
+
+test('TrailQuestEngine awards scaled Trail Points on correct answers', () => {
+  const state = TrailQuestEngine.loadState('test_points_learner');
+  const startingPoints = state.trailPoints || 0;
+
+  const result = TrailQuestEngine.completeNode({
+    state,
+    nodeId: 'rb_node_1',
+    mile: 10,
+    isCorrect: true,
+    division: 'junior'
+  });
+
+  assert.ok(result.earnedPoints >= 85, 'Must award at least 85 points for correct answer');
+  assert.strictEqual(result.updatedState.trailPoints, startingPoints + result.earnedPoints);
+});
+
+test('TrailQuestEngine triggers severe trail calamities and penalties on incorrect answers', () => {
+  const state = TrailQuestEngine.loadState('test_hazard_learner');
+  const initialCoat = state.showQuality.coatCondition;
+
+  const result = TrailQuestEngine.completeNode({
+    state,
+    nodeId: 'rb_node_3',
+    mile: 25,
+    isCorrect: false,
+    division: 'junior'
+  });
+
+  assert.ok(result.triggeredHazard, 'Must trigger a frontier hazard on incorrect answer');
+  assert.ok(result.triggeredHazard.narrative.length > 20, 'Hazard must have vivid narrative');
+  assert.ok(result.updatedState.showQuality.coatCondition <= initialCoat, 'Coat condition must degrade from trail hazard');
+});
+
+test('Trail Trading Post supports buying care gear and boosting animal show quality', () => {
+  let state = TrailQuestEngine.loadState('test_shop_learner');
+  state.trailPoints = 500;
+  state.purchasedItemIds = [];
+  state.showQuality.poseTraining = 50;
+
+  // Buy Show Stance Mirror (costs 150)
+  const buyResult = TrailQuestEngine.buyOutfitterItem(state, 'gear_pose_mirror');
+  assert.strictEqual(buyResult.updatedState.trailPoints, 350);
+  assert.ok(buyResult.updatedState.purchasedItemIds.includes('gear_pose_mirror'));
+  assert.strictEqual(buyResult.updatedState.showQuality.poseTraining, 75, 'Must boost pose training by +25');
+});
+
+test('Trail care actions restore show condition metrics at camp', () => {
+  let state = TrailQuestEngine.loadState('test_care_learner');
+  state.showQuality.coatCondition = 60;
+  state.showQuality.vigorHydration = 60;
+
+  const brushed = TrailQuestEngine.performTrailCare(state, 'brush');
+  assert.strictEqual(brushed.updatedState.showQuality.coatCondition, 75);
+
+  const watered = TrailQuestEngine.performTrailCare(brushed.updatedState, 'water');
+  assert.strictEqual(watered.updatedState.showQuality.vigorHydration, 75);
+});
+
+test('Championship Show Ring calculates judge scorecard and awards Grand Champion Rosette', () => {
+  const state = TrailQuestEngine.loadState('test_show_champion');
+  state.showQuality = {
+    coatCondition: 100,
+    vigorHydration: 100,
+    temperament: 100,
+    poseTraining: 100
+  };
+  state.purchasedItemIds = ['skill_ring_presence'];
+
+  const evaluation = TrailQuestEngine.evaluateShowRing(state, { oralExamScore: 100 });
+  assert.strictEqual(evaluation.awardRecord.totalScore, 100);
+  assert.ok(evaluation.awardRecord.ribbon.includes('Grand Champion Purple Rosette'));
+  assert.ok(evaluation.updatedState.earnedRibbons.length >= 1);
+});
+
 // ----------------------------------------------------
 // 9. PARENT-DEFINED CONTROLS & AUDIT LOGGING TESTS
 // ----------------------------------------------------

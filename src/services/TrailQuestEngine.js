@@ -2,6 +2,7 @@
 // Manages party condition, supplies, herd bond, cosmetic unlocks, and trail progression
 
 import { ALL_COSMETICS } from '../data/game/cosmeticsCatalog.js';
+import { TRAIL_HAZARDS, getRandomTrailHazard } from '../data/game/trailHazards.js';
 
 const STORAGE_PREFIX = 'ww_herd_trail_quest_';
 
@@ -12,11 +13,145 @@ export const CONDITION_LEVELS = {
   AT_RISK: { label: 'At Risk', color: 'text-rose-700 bg-rose-100 border-rose-300', emoji: '⚠️' }
 };
 
+export const TRAIL_DIFFICULTY_TIERS = {
+  TIER_1: {
+    tier: 1,
+    name: 'Homestead Valley (Novice)',
+    mileRange: '0 - 25 Miles',
+    hazardRisk: 'Low',
+    pointsMultiplier: 1.0,
+    penaltyMultiplier: 0.8,
+    badgeColor: 'text-emerald-700 bg-emerald-100 border-emerald-300',
+    description: 'Gentle valley roads, fundamental care vocabulary, forgiving weather.'
+  },
+  TIER_2: {
+    tier: 2,
+    name: 'Timberline Ridge (Journeyman)',
+    mileRange: '25 - 55 Miles',
+    hazardRisk: 'Moderate',
+    pointsMultiplier: 1.3,
+    penaltyMultiplier: 1.1,
+    badgeColor: 'text-cyan-700 bg-cyan-100 border-cyan-300',
+    description: 'Rising hills, technical feed math, quarantine protocols, deeper breed questions.'
+  },
+  TIER_3: {
+    tier: 3,
+    name: 'High Divide Passes (Advanced)',
+    mileRange: '55 - 85 Miles',
+    hazardRisk: 'High',
+    pointsMultiplier: 1.7,
+    penaltyMultiplier: 1.5,
+    badgeColor: 'text-amber-700 bg-amber-100 border-amber-300',
+    description: 'Rockfalls, sudden storms, body condition score analysis, genetic & fault disqualifications.'
+  },
+  TIER_4: {
+    tier: 4,
+    name: 'Championship Pavilion Arena (Master Showman)',
+    mileRange: '85 - 100 Miles',
+    hazardRisk: 'Extreme / Judge Inspection',
+    pointsMultiplier: 2.2,
+    penaltyMultiplier: 2.0,
+    badgeColor: 'text-purple-700 bg-purple-100 border-purple-300',
+    description: 'Grand Fair ring pressure, rapid oral judge defense, breed standard perfection.'
+  }
+};
+
+export const TRAIL_OUTFITTER_CATALOG = [
+  {
+    id: 'gear_soft_brush',
+    name: 'Camelhair Show Brush',
+    category: 'gear',
+    cost: 120,
+    emoji: '🪮',
+    description: 'Ultra-soft natural bristles that remove trail road dust and produce a high-gloss show sheen.',
+    effect: { coatCondition: 20 },
+    lore: 'Preferred by champion rabbit, cavy, and poultry showmen for final ring dusting.'
+  },
+  {
+    id: 'gear_spring_keg',
+    name: 'Pure Spring Water Keg',
+    category: 'gear',
+    cost: 140,
+    emoji: '🚰',
+    description: 'Insulated oak barrel keeping fresh mountain spring water chilled against afternoon trail heat.',
+    effect: { vigorHydration: 20 },
+    lore: 'Clean water is the bedrock of animal hydration, digestion, and bright alert eyes.'
+  },
+  {
+    id: 'gear_timothy_cakes',
+    name: 'Mountain Timothy Hay Cakes',
+    category: 'care',
+    cost: 100,
+    emoji: '🌾',
+    description: 'Sun-cured mountain grass compressed into easy-travel cakes for healthy gut motility.',
+    effect: { vigorHydration: 12, coatCondition: 8 },
+    lore: 'High long-stem fiber ensures smooth digestion and calm chewing during long trail days.'
+  },
+  {
+    id: 'gear_wagon_sunshade',
+    name: 'Canvas Wagon Sunshade',
+    category: 'gear',
+    cost: 160,
+    emoji: '⛺',
+    description: 'Roll-down breathable canvas canopy shielding the animal carrier cart from glare and trail dust.',
+    effect: { temperament: 15, vigorHydration: 10 },
+    lore: 'Keeps transport compartments up to 10 degrees cooler when crossing open sunny plains.'
+  },
+  {
+    id: 'gear_lavender_sprig',
+    name: 'Calming Herbal Scent Sprig',
+    category: 'care',
+    cost: 90,
+    emoji: '🌿',
+    description: 'Dried lavender and chamomile hung beside the crate to soothe nerves and travel restlessness.',
+    effect: { temperament: 20 },
+    lore: 'A natural, gentle scent that helps animals settle into peaceful rest between trail halts.'
+  },
+  {
+    id: 'gear_pose_mirror',
+    name: 'Show Stance Practice Mirror',
+    category: 'gear',
+    cost: 150,
+    emoji: '🪞',
+    description: 'Portable felt-backed inspection stand used at camp to practice square posing and breed stance.',
+    effect: { poseTraining: 25 },
+    lore: 'Youth practice observing proper front foot alignment, loin fullness, and steady posture.'
+  },
+  {
+    id: 'skill_gentle_hands',
+    name: 'Showmanship Touch ("Gentle Hands")',
+    category: 'ability',
+    cost: 200,
+    emoji: '🤲',
+    description: 'Mastery technique: confident, calm handling that reassures the animal before judge inspection.',
+    effect: { temperament: 25, poseTraining: 10 },
+    lore: 'Judges award top marks when an animal displays calm trust and zero fear on the show table.'
+  },
+  {
+    id: 'skill_ring_presence',
+    name: 'Exhibitor Ring Poise',
+    category: 'ability',
+    cost: 280,
+    emoji: '⭐',
+    description: 'Advanced showmanship skill granting bonus presentation composure during the final judging ring.',
+    effect: { poseTraining: 20, coatCondition: 15 },
+    lore: 'Eye contact with the judge, courteous manners, and prompt answers in the oral exam.'
+  }
+];
+
 export const DEFAULT_QUEST_STATE = {
   activeTrailPackId: 'rabbits_trail',
   currentMile: 0,
   completedNodeIds: [],
-  conditionScore: 95, // 0 - 100
+  trailPoints: 250, // Points earned from answering quizzes accurately
+  conditionScore: 95, // Overall 0 - 100
+  showQuality: {
+    coatCondition: 85, // 0 - 100 (Grooming, brushing, clean bedding)
+    vigorHydration: 90, // 0 - 100 (Clean water, high quality forage, rest)
+    temperament: 80, // 0 - 100 (Gentle handling, low stress)
+    poseTraining: 75 // 0 - 100 (Practicing table stance at rest camps)
+  },
+  purchasedItemIds: ['gear_soft_brush', 'gear_spring_keg'],
   supplies: {
     feed: 60,
     water: 50,
@@ -29,7 +164,7 @@ export const DEFAULT_QUEST_STATE = {
   herdBond: {
     xp: 0,
     level: 1,
-    unlockedLore: ['Your companion nuzzles your hand, eager to begin the trail journey!']
+    unlockedLore: ['Your companion nuzzles your hand, eager to begin the wagon trail journey!']
   },
   equippedCosmetics: {
     traveler_skin: 'outfit_trail_blazer',
@@ -62,7 +197,7 @@ export const DEFAULT_QUEST_STATE = {
       date: 'Today'
     }
   ],
-  practiceRibbons: []
+  earnedRibbons: []
 };
 
 export class TrailQuestEngine {
@@ -108,6 +243,25 @@ export class TrailQuestEngine {
   }
 
   /**
+   * Evaluates current trail difficulty tier based on miles traveled, Herd Bond, and age division.
+   */
+  static getDifficultyTier(mile = 0, bondLevel = 1, division = 'junior') {
+    if (division === 'cloverbud') {
+      return TRAIL_DIFFICULTY_TIERS.TIER_1;
+    }
+    if (mile >= 85) {
+      return TRAIL_DIFFICULTY_TIERS.TIER_4;
+    }
+    if (mile >= 55 || bondLevel >= 6) {
+      return TRAIL_DIFFICULTY_TIERS.TIER_3;
+    }
+    if (mile >= 25 || bondLevel >= 3) {
+      return TRAIL_DIFFICULTY_TIERS.TIER_2;
+    }
+    return TRAIL_DIFFICULTY_TIERS.TIER_1;
+  }
+
+  /**
    * Processes the completion of a trail challenge node.
    */
   static completeNode({
@@ -131,6 +285,13 @@ export class TrailQuestEngine {
       updated.currentMile = mile;
     }
 
+    // Determine progressive difficulty tier
+    const difficultyTier = TrailQuestEngine.getDifficultyTier(
+      updated.currentMile, 
+      updated.herdBond?.level || 1, 
+      division
+    );
+
     // Update condition (clamped between 20 and 100, no death spiral)
     const baseConditionDelta = isCorrect ? Math.max(10, conditionDelta) : Math.min(-5, conditionDelta);
     // Cloverbud division has soft protection against negative condition
@@ -144,7 +305,6 @@ export class TrailQuestEngine {
         newSupplies[k] = Math.max(10, Math.min(100, newSupplies[k] + v));
       }
     });
-    updated.supplies = newSupplies;
 
     // Update Herd Bond
     const currentBond = { ...updated.herdBond };
@@ -158,6 +318,55 @@ export class TrailQuestEngine {
       );
     }
     updated.herdBond = currentBond;
+
+    // Award Trail Points (The better you answer, and the higher the difficulty tier, the more points you get!)
+    const streakBonus = Math.min(40, (updated.dailyStreak?.count || 1) * 10);
+    const divisionBonus = division === 'senior' ? 35 : (division === 'intermediate' ? 20 : 10);
+    let earnedPoints = 20;
+
+    let triggeredHazard = null;
+    const currentQuality = { ...(updated.showQuality || { coatCondition: 85, vigorHydration: 90, temperament: 80, poseTraining: 75 }) };
+
+    if (isCorrect) {
+      // Points scaled by progressive difficulty tier
+      earnedPoints = Math.round((75 + divisionBonus + streakBonus) * difficultyTier.pointsMultiplier);
+      currentQuality.temperament = Math.min(100, currentQuality.temperament + 5);
+      currentQuality.poseTraining = Math.min(100, currentQuality.poseTraining + 4);
+      currentQuality.coatCondition = Math.max(20, currentQuality.coatCondition - 2);
+    } else {
+      // Incorrect answer: Trigger severe frontier trail calamity!
+      earnedPoints = 15;
+      triggeredHazard = getRandomTrailHazard(nodeId || 'care_choices');
+
+      const penaltyMult = difficultyTier.penaltyMultiplier || 1.0;
+      if (triggeredHazard.penalties.coatCondition) {
+        currentQuality.coatCondition = Math.max(15, currentQuality.coatCondition + Math.round(triggeredHazard.penalties.coatCondition * penaltyMult));
+      }
+      if (triggeredHazard.penalties.vigorHydration) {
+        currentQuality.vigorHydration = Math.max(15, currentQuality.vigorHydration + Math.round(triggeredHazard.penalties.vigorHydration * penaltyMult));
+      }
+      if (triggeredHazard.penalties.temperament) {
+        currentQuality.temperament = Math.max(15, currentQuality.temperament + Math.round(triggeredHazard.penalties.temperament * penaltyMult));
+      }
+      if (triggeredHazard.penalties.poseTraining) {
+        currentQuality.poseTraining = Math.max(15, currentQuality.poseTraining + Math.round(triggeredHazard.penalties.poseTraining * penaltyMult));
+      }
+
+      // Incur supply loss if hazard damages wagon stores
+      if (triggeredHazard.penalties.supplies?.feed && newSupplies.feed) {
+        newSupplies.feed = Math.max(5, newSupplies.feed + triggeredHazard.penalties.supplies.feed);
+      }
+      if (triggeredHazard.penalties.supplies?.water && newSupplies.water) {
+        newSupplies.water = Math.max(5, newSupplies.water + triggeredHazard.penalties.supplies.water);
+      }
+      if (triggeredHazard.penalties.supplies?.bedding && newSupplies.bedding) {
+        newSupplies.bedding = Math.max(5, newSupplies.bedding + triggeredHazard.penalties.supplies.bedding);
+      }
+    }
+
+    updated.supplies = newSupplies;
+    updated.showQuality = currentQuality;
+    updated.trailPoints = (updated.trailPoints || 0) + earnedPoints;
 
     // Check for new cosmetic unlocks (skins, pets, upgraded equipment, emotes, decor)
     const unlockedNow = [];
@@ -196,7 +405,161 @@ export class TrailQuestEngine {
 
     return {
       updatedState: updated,
-      newlyUnlockedCosmetics: unlockedNow
+      newlyUnlockedCosmetics: unlockedNow,
+      earnedPoints,
+      triggeredHazard,
+      difficultyTier
+    };
+  }
+
+  /**
+   * Purchases care gear or abilities from the Trail Outfitter with earned Trail Points.
+   */
+  static buyOutfitterItem(state, itemId) {
+    const item = TRAIL_OUTFITTER_CATALOG.find(i => i.id === itemId);
+    if (!item) {
+      throw new Error(`Item ${itemId} not found in Trail Outfitter catalog.`);
+    }
+
+    const currentPoints = state.trailPoints || 0;
+    if (currentPoints < item.cost) {
+      throw new Error(`Insufficient Trail Points. Required: ${item.cost}, Available: ${currentPoints}.`);
+    }
+
+    const purchased = state.purchasedItemIds || [];
+    if (purchased.includes(itemId)) {
+      throw new Error(`You already possess ${item.name}!`);
+    }
+
+    const updated = { ...state };
+    updated.trailPoints = currentPoints - item.cost;
+    updated.purchasedItemIds = [...purchased, itemId];
+
+    // Apply immediate stat boosts
+    const quality = { ...(updated.showQuality || { coatCondition: 85, vigorHydration: 90, temperament: 80, poseTraining: 75 }) };
+    if (item.effect.coatCondition) quality.coatCondition = Math.min(100, quality.coatCondition + item.effect.coatCondition);
+    if (item.effect.vigorHydration) quality.vigorHydration = Math.min(100, quality.vigorHydration + item.effect.vigorHydration);
+    if (item.effect.temperament) quality.temperament = Math.min(100, quality.temperament + item.effect.temperament);
+    if (item.effect.poseTraining) quality.poseTraining = Math.min(100, quality.poseTraining + item.effect.poseTraining);
+
+    updated.showQuality = quality;
+
+    return {
+      updatedState: updated,
+      purchasedItem: item
+    };
+  }
+
+  /**
+   * Performs an interactive grooming / care routine at camp.
+   */
+  static performTrailCare(state, actionType) {
+    const updated = { ...state };
+    const quality = { ...(updated.showQuality || { coatCondition: 85, vigorHydration: 90, temperament: 80, poseTraining: 75 }) };
+    let message = '';
+
+    switch (actionType) {
+      case 'brush':
+        quality.coatCondition = Math.min(100, quality.coatCondition + 15);
+        message = 'You gently brushed away trail dust with the show brush. Coat is glowing!';
+        break;
+      case 'water':
+        quality.vigorHydration = Math.min(100, quality.vigorHydration + 15);
+        message = 'You offered chilled, fresh spring water. Eyes are bright and alert!';
+        break;
+      case 'pose':
+        quality.poseTraining = Math.min(100, quality.poseTraining + 15);
+        message = 'You practiced proper show table square stance. Animal holds posture steady!';
+        break;
+      case 'comfort':
+        quality.temperament = Math.min(100, quality.temperament + 15);
+        message = 'Gentle reassurance and calming herbs relaxed your companion completely.';
+        break;
+      default:
+        break;
+    }
+
+    updated.showQuality = quality;
+    return {
+      updatedState: updated,
+      message
+    };
+  }
+
+  /**
+   * Evaluates the Grand Championship Show Ring performance based on
+   * arriving animal condition + showmanship oral exam score.
+   */
+  static evaluateShowRing(state, { oralExamScore = 100, exhibitorNotes = '' }) {
+    const quality = state.showQuality || { coatCondition: 85, vigorHydration: 90, temperament: 80, poseTraining: 75 };
+    
+    // Physical Condition Index (50% of total score)
+    const physicalScore = (
+      quality.coatCondition * 0.25 +
+      quality.vigorHydration * 0.25 +
+      quality.temperament * 0.25 +
+      quality.poseTraining * 0.25
+    ) * 0.5;
+
+    // Showmanship Knowledge & Presentation (50% of total score)
+    const knowledgeScore = (oralExamScore / 100) * 50;
+
+    // Ring Poise ability bonus if owned
+    const hasRingPoise = (state.purchasedItemIds || []).includes('skill_ring_presence');
+    const bonus = hasRingPoise ? 5 : 0;
+
+    const totalScore = Math.min(100, Math.round(physicalScore + knowledgeScore + bonus));
+
+    let ribbon = 'White Ribbon';
+    let ribbonColor = 'text-slate-600 bg-slate-100 border-slate-300';
+    let ribbonTitle = 'Participant Honors';
+    let ribbonIcon = '🎗️';
+
+    if (totalScore >= 95) {
+      ribbon = 'Grand Champion Purple Rosette';
+      ribbonColor = 'text-purple-700 bg-purple-100 border-purple-300';
+      ribbonTitle = 'Grand Champion of Show';
+      ribbonIcon = '🏆';
+    } else if (totalScore >= 90) {
+      ribbon = 'Reserve Champion Rosette';
+      ribbonColor = 'text-indigo-700 bg-indigo-100 border-indigo-300';
+      ribbonTitle = 'Reserve Champion of Show';
+      ribbonIcon = '🥈';
+    } else if (totalScore >= 80) {
+      ribbon = 'Blue Ribbon (First Class)';
+      ribbonColor = 'text-blue-700 bg-blue-100 border-blue-300';
+      ribbonTitle = 'Blue Ribbon Showmanship';
+      ribbonIcon = '🏅';
+    } else if (totalScore >= 70) {
+      ribbon = 'Red Ribbon (Second Class)';
+      ribbonColor = 'text-rose-700 bg-rose-100 border-rose-300';
+      ribbonTitle = 'Red Ribbon Exhibitor';
+      ribbonIcon = '🎖️';
+    }
+
+    const awardRecord = {
+      id: `award_${Date.now()}`,
+      trailPackId: state.activeTrailPackId,
+      date: new Date().toISOString().split('T')[0],
+      totalScore,
+      physicalScore: Math.round(physicalScore * 2),
+      knowledgeScore: Math.round(knowledgeScore * 2),
+      ribbon,
+      ribbonTitle,
+      ribbonIcon,
+      judgeFeedback: totalScore >= 90
+        ? 'Superb demonstration of 4-H husbandry! Coat sheen, hydration, and table composure are outstanding. Highly commendable!'
+        : 'Good effort across the overland trail! Continue practicing breed standard posing and daily grooming before the next regional convention.'
+    };
+
+    const updated = {
+      ...state,
+      earnedRibbons: [awardRecord, ...(state.earnedRibbons || [])]
+    };
+
+    return {
+      updatedState: updated,
+      awardRecord
     };
   }
 
@@ -238,6 +601,7 @@ export class TrailQuestEngine {
         count: nextCount,
         lastClaimDate: today
       },
+      trailPoints: (state.trailPoints || 0) + (nextCount * 25),
       supplies: {
         ...state.supplies,
         feed: Math.min(100, state.supplies.feed + 25),
@@ -260,7 +624,7 @@ export class TrailQuestEngine {
     return {
       alreadyClaimed: false,
       updatedState: updated,
-      rewardSummary: `Day ${nextCount} Streak! Received +25 Feed, +25 Water, +15 Bedding, and +50 Herd Bond XP!${nextCount >= 5 ? ' 🌟 Unlocked Solar Barn Lantern Pack!' : ''}`
+      rewardSummary: `Day ${nextCount} Streak! Received +${nextCount * 25} Trail Points, +25 Feed, +25 Water, +15 Bedding, and +50 Herd Bond XP!${nextCount >= 5 ? ' 🌟 Unlocked Solar Barn Lantern Pack!' : ''}`
     };
   }
 
@@ -281,3 +645,4 @@ export class TrailQuestEngine {
     };
   }
 }
+

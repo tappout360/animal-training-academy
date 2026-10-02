@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Compass, Map, Sparkles, Home, Award, Heart, 
   MapPin, Shield, RotateCcw, AlertTriangle, ChevronRight, Bot,
-  Gift, Flame, Eye, Volume2, CheckCircle2, Lock
+  Gift, Flame, Eye, Volume2, CheckCircle2, Lock, Coins, Trophy, ShoppingBag
 } from 'lucide-react';
 import PartyConditionCard from './PartyConditionCard';
 import TrailMapView from './TrailMapView';
@@ -15,6 +15,10 @@ import ChallengeModal from './ChallengeModal';
 import CosmeticsLocker from './CosmeticsLocker';
 import HabitatShowcase from './HabitatShowcase';
 import CoachSignalModal from './CoachSignalModal';
+import VisualWagonTrailViewport from './VisualWagonTrailViewport';
+import TrailOutfitterStore from './TrailOutfitterStore';
+import ChampionshipShowRing from './ChampionshipShowRing';
+import TrailHazardModal from './TrailHazardModal';
 import { TRAIL_PACKS, getTrailPackById, getAvailableTrailPacks } from '../../data/game/trailPacks';
 import { TrailQuestEngine } from '../../services/TrailQuestEngine';
 
@@ -26,8 +30,9 @@ export default function HerdTrailQuest({
   onCompleteQuiz
 }) {
   const [questState, setQuestState] = useState(() => TrailQuestEngine.loadState(learner.id));
-  const [activeTab, setActiveTab] = useState('trail'); // 'trail' | 'overworld' | 'locker' | 'habitat'
+  const [activeTab, setActiveTab] = useState('trail'); // 'trail' | 'overworld' | 'outfitter' | 'showring' | 'locker' | 'habitat'
   const [activeNode, setActiveNode] = useState(null);
+  const [activeHazard, setActiveHazard] = useState(null);
   const [isCoachSignalModalOpen, setIsCoachSignalModalOpen] = useState(false);
   const [celebrationCosmetic, setCelebrationCosmetic] = useState(null);
   const [streakModalData, setStreakModalData] = useState(null);
@@ -53,7 +58,13 @@ export default function HerdTrailQuest({
     suppliesDelta,
     bondXpDelta
   }) => {
-    const { updatedState, newlyUnlockedCosmetics } = TrailQuestEngine.completeNode({
+    const { 
+      updatedState, 
+      newlyUnlockedCosmetics, 
+      earnedPoints, 
+      triggeredHazard, 
+      difficultyTier 
+    } = TrailQuestEngine.completeNode({
       state: questState,
       nodeId,
       mile,
@@ -67,6 +78,11 @@ export default function HerdTrailQuest({
     setQuestState(updatedState);
     TrailQuestEngine.saveState(learner.id, updatedState);
     setActiveNode(null);
+
+    // If answer was incorrect, trigger the dramatic frontier calamity!
+    if (triggeredHazard) {
+      setActiveHazard(triggeredHazard);
+    }
 
     // Sync to Academy Mastery Engine & 4-H Badges
     if (onCompleteQuiz && isCorrect) {
@@ -84,6 +100,25 @@ export default function HerdTrailQuest({
     if (newlyUnlockedCosmetics.length > 0) {
       setCelebrationCosmetic(newlyUnlockedCosmetics[0]);
     }
+  };
+
+  const handleCareAction = (type) => {
+    const { updatedState, message } = TrailQuestEngine.performTrailCare(questState, type);
+    setQuestState(updatedState);
+    TrailQuestEngine.saveState(learner.id, updatedState);
+    return { message };
+  };
+
+  const handleBuyItem = (itemId) => {
+    const { updatedState } = TrailQuestEngine.buyOutfitterItem(questState, itemId);
+    setQuestState(updatedState);
+    TrailQuestEngine.saveState(learner.id, updatedState);
+  };
+
+  const handleSaveAward = (awardRecord) => {
+    // Award record already saved in evaluateShowRing inside engine
+    const refreshed = TrailQuestEngine.loadState(learner.id);
+    setQuestState(refreshed);
   };
 
   const handleEquipCosmetic = (type, cosmeticId) => {
@@ -179,7 +214,34 @@ export default function HerdTrailQuest({
             }`}
           >
             <Map className="w-4 h-4" />
-            <span>Trail Map &amp; Journey</span>
+            <span>Trail Map &amp; Caravan</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('outfitter')}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
+              activeTab === 'outfitter'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span>Trading Post</span>
+            <span className="bg-amber-100 text-amber-900 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold">
+              {(questState.trailPoints || 0)} Pts
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('showring')}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
+              activeTab === 'showring'
+                ? 'bg-purple-700 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            <span>Grand Show Ring</span>
           </button>
 
           <button
@@ -191,26 +253,26 @@ export default function HerdTrailQuest({
             }`}
           >
             <Compass className="w-4 h-4" />
-            <span>12-Region Overworld Map</span>
+            <span>12-Region Overworld</span>
           </button>
 
           <button
             onClick={() => setActiveTab('locker')}
             className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
               activeTab === 'locker'
-                ? 'bg-purple-700 text-white shadow-xs'
+                ? 'bg-indigo-700 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Sparkles className="w-4 h-4" />
-            <span>Equipped Gear, Pets &amp; Skins</span>
+            <span>Gear &amp; Pets</span>
           </button>
 
           <button
             onClick={() => setActiveTab('habitat')}
             className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
               activeTab === 'habitat'
-                ? 'bg-amber-600 text-white shadow-xs'
+                ? 'bg-stone-800 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -244,6 +306,16 @@ export default function HerdTrailQuest({
       {/* Main Tab Views */}
       {activeTab === 'trail' && (
         <div className="space-y-6">
+          {/* Animated Pioneer Wagon Trail Visual Viewport */}
+          <VisualWagonTrailViewport
+            questState={questState}
+            trailPack={currentTrailPack}
+            onCareAction={handleCareAction}
+            onOpenOutfitter={() => setActiveTab('outfitter')}
+            onEnterShowRing={() => setActiveTab('showring')}
+            onAskMentor={() => onOpenAiTrainer?.()}
+          />
+
           {/* Party Condition & Supplies HUD */}
           <PartyConditionCard
             questState={questState}
@@ -259,6 +331,23 @@ export default function HerdTrailQuest({
             onSelectNode={(node) => setActiveNode(node)}
           />
         </div>
+      )}
+
+      {activeTab === 'outfitter' && (
+        <TrailOutfitterStore
+          questState={questState}
+          onBuyItem={handleBuyItem}
+          onClose={() => setActiveTab('trail')}
+        />
+      )}
+
+      {activeTab === 'showring' && (
+        <ChampionshipShowRing
+          questState={questState}
+          trailPack={currentTrailPack}
+          onSaveAward={handleSaveAward}
+          onReturnToTrail={() => setActiveTab('trail')}
+        />
       )}
 
       {activeTab === 'overworld' && (
@@ -353,6 +442,15 @@ export default function HerdTrailQuest({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Frontier Trail Calamity / Hazard Modal */}
+      {activeHazard && (
+        <TrailHazardModal
+          hazard={activeHazard}
+          onAcknowledge={() => setActiveHazard(null)}
+          onAskWarrenWise={() => onOpenAiTrainer?.()}
+        />
       )}
 
       {/* Permanent Independent Educational Disclaimer */}
