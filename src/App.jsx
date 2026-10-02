@@ -20,8 +20,10 @@ import AdminControlCenter from './components/admin/AdminControlCenter';
 import HerdTrailQuest from './components/game/HerdTrailQuest';
 import YouthSessionGuard from './components/common/YouthSessionGuard';
 import ParentControlCenter from './components/parent/ParentControlCenter';
+import RoleAuthGateModal from './components/common/RoleAuthGateModal';
 
 import { getSpeciesPackById } from './data/speciesPacks';
+import { canCoachAccessLearner } from './services/YouthSafetyService';
 import { 
   SEED_LEARNERS, SEED_PROGRESS, SEED_ASSIGNMENTS, 
   SEED_OBSERVATIONS 
@@ -54,15 +56,34 @@ export default function App() {
   // Active learner is index 0 (Sammy Miller - CloverChampion42)
   const currentLearner = learners[0];
 
-  // Adjust default tab when role changes
+  // Permission Gate State
+  const [gateTargetRole, setGateTargetRole] = useState(null);
+
+  // Authenticated Role Switcher
   const handleSelectRole = (newRole) => {
-    setActiveRole(newRole);
+    if (newRole === activeRole) return;
+
+    // Switching to youth is always permitted (safe default)
+    if (newRole === 'youth') {
+      setActiveRole('youth');
+      setActiveLessonModule(null);
+      setActiveQuizModule(null);
+      setActiveTab('modules');
+      return;
+    }
+
+    // Switching into parent, coach, or admin requires PIN / credentials verification
+    setGateTargetRole(newRole);
+  };
+
+  const handleGateSuccess = (authenticatedRole) => {
+    setActiveRole(authenticatedRole);
+    setGateTargetRole(null);
     setActiveLessonModule(null);
     setActiveQuizModule(null);
-    if (newRole === 'youth') setActiveTab('modules');
-    else if (newRole === 'parent') setActiveTab('parent_controls');
-    else if (newRole === 'coach') setActiveTab('roster');
-    else if (newRole === 'admin') setActiveTab('governance');
+    if (authenticatedRole === 'parent') setActiveTab('parent_controls');
+    else if (authenticatedRole === 'coach') setActiveTab('roster');
+    else if (authenticatedRole === 'admin') setActiveTab('governance');
   };
 
   const currentPack = getSpeciesPackById(selectedSpeciesId);
@@ -225,33 +246,22 @@ export default function App() {
           </YouthSessionGuard>
         )}
 
-        {/* Parent Guardian Center Experience */}
+        {/* Parent Guardian Center Experience (Scoped strictly to linked youth) */}
         {activeRole === 'parent' && (
-          activeTab === 'roster' || activeTab === 'assignments' ? (
-            <CoachDashboard
-              learners={learners}
-              progressList={progressList}
-              assignments={assignments}
-              observations={observations}
-              onAddAssignment={handleAddAssignment}
-              onSaveObservation={handleSaveObservation}
-            />
-          ) : (
-            <ParentControlCenter
-              learners={learners}
-              activeLearnerId={currentLearner.id}
-              onSelectLearner={(id) => {
-                const found = learners.find(l => l.id === id);
-                if (found) setCurrentLearner(found);
-              }}
-            />
-          )
+          <ParentControlCenter
+            learners={learners.filter(l => l.parentEmail === 'parent.miller@example.com')}
+            activeLearnerId={currentLearner.id}
+            onSelectLearner={(id) => {
+              const found = learners.find(l => l.id === id);
+              if (found) setCurrentLearner(found);
+            }}
+          />
         )}
 
-        {/* Coach / Leader Hub Experience */}
+        {/* Coach / Leader Hub Experience (Scoped strictly to consented assigned learners) */}
         {activeRole === 'coach' && (
           <CoachDashboard
-            learners={learners}
+            learners={learners.filter(l => canCoachAccessLearner(l, 'coach_linda'))}
             progressList={progressList}
             assignments={assignments}
             observations={observations}
@@ -286,6 +296,14 @@ export default function App() {
         currentDivision={activeDivision}
         selectedSpeciesId={selectedSpeciesId}
         contextModule={activeLessonModule || activeQuizModule}
+      />
+
+      {/* Role Authentication & Permission Guard Gate */}
+      <RoleAuthGateModal
+        targetRole={gateTargetRole}
+        isOpen={!!gateTargetRole}
+        onSuccess={handleGateSuccess}
+        onClose={() => setGateTargetRole(null)}
       />
 
       {/* Persistent Legal & Accuracy Footer */}

@@ -52,7 +52,9 @@ export function getAvailableSpecies() {
     icon: p.icon,
     version: p.version,
     lastVerifiedDate: p.lastVerifiedDate,
-    verifiedBy: p.verifiedBy,
+    reviewPolicy: p.reviewPolicy || 'Reviewed under Academy Accuracy Policy',
+    reviewerRole: p.reviewerRole || 'Internal Curriculum Specialist',
+    verifiedBy: p.verifiedBy || 'Reviewed under Academy Accuracy Policy',
     moduleCount: p.modules.length,
     phase: getSpeciesPhase(p.id)
   }));

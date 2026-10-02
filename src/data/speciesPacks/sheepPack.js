@@ -10,7 +10,9 @@ export const SHEEP_PACK = {
   icon: 'Shield',
   version: '1.0.0',
   lastVerifiedDate: '2026-09-20',
-  verifiedBy: 'Extension Small Ruminant Specialist & ASI Youth Committee',
+  reviewPolicy: 'Reviewed under Academy Accuracy Policy',
+  reviewerRole: 'Internal Curriculum Specialist (Small Ruminants)',
+  verifiedBy: 'Reviewed under Academy Accuracy Policy',
   description: 'Complete 4-H sheep project curriculum covering meat vs wool breeds, copper toxicity prevention, scrapie tags, market lamb bracing, shearing, and ethics.',
   targetDivisions: ['cloverbud', 'junior', 'intermediate', 'senior'],
   modules: [

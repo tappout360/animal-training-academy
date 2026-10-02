@@ -10,7 +10,9 @@ export const POULTRY_PACK = {
   icon: 'Egg',
   version: '2.0.0',
   lastVerifiedDate: '2026-09-15',
-  verifiedBy: 'Extension Avian Specialist & APA/ABA Youth Committee',
+  reviewPolicy: 'Reviewed under Academy Accuracy Policy',
+  reviewerRole: 'Internal Curriculum Specialist (Avian Science)',
+  verifiedBy: 'Reviewed under Academy Accuracy Policy',
   description: 'Comprehensive 4-H poultry project mastery covering APA breed standards, large fowl vs bantams, waterfowl, biosecurity (Avian Influenza prevention), egg quality, and showmanship.',
   targetDivisions: ['cloverbud', 'junior', 'intermediate', 'senior'],
   modules: [

@@ -10,7 +10,9 @@ export const DAIRY_CATTLE_PACK = {
   icon: 'Shield',
   version: '1.0.0',
   lastVerifiedDate: '2026-09-20',
-  verifiedBy: 'Extension Dairy Specialist & Purebred Dairy Cattle Association (PDCA) Youth Committee',
+  reviewPolicy: 'Reviewed under Academy Accuracy Policy',
+  reviewerRole: 'Internal Curriculum Specialist (Dairy Science)',
+  verifiedBy: 'Reviewed under Academy Accuracy Policy',
   description: 'Comprehensive 4-H dairy project curriculum covering the 6 major breeds, PDCA Unified Scorecard, lactation cycles, milking parlor hygiene, CMT mastitis testing, and showmanship.',
   targetDivisions: ['cloverbud', 'junior', 'intermediate', 'senior'],
   modules: [

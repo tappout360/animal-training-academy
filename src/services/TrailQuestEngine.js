@@ -335,32 +335,37 @@ export class TrailQuestEngine {
       currentQuality.coatCondition = Math.max(20, currentQuality.coatCondition - 2);
     } else {
       // Incorrect answer: Trigger severe frontier trail calamity!
-      earnedPoints = 15;
+      earnedPoints = division === 'cloverbud' ? 35 : 15;
       triggeredHazard = getRandomTrailHazard(nodeId || 'care_choices');
 
-      const penaltyMult = difficultyTier.penaltyMultiplier || 1.0;
+      // Cloverbuds have soft low-pressure protection against severe setbacks
+      const penaltyMult = division === 'cloverbud' ? 0.2 : (difficultyTier.penaltyMultiplier || 1.0);
+      const minConditionFloor = division === 'cloverbud' ? 60 : 15;
+
       if (triggeredHazard.penalties.coatCondition) {
-        currentQuality.coatCondition = Math.max(15, currentQuality.coatCondition + Math.round(triggeredHazard.penalties.coatCondition * penaltyMult));
+        currentQuality.coatCondition = Math.max(minConditionFloor, currentQuality.coatCondition + Math.round(triggeredHazard.penalties.coatCondition * penaltyMult));
       }
       if (triggeredHazard.penalties.vigorHydration) {
-        currentQuality.vigorHydration = Math.max(15, currentQuality.vigorHydration + Math.round(triggeredHazard.penalties.vigorHydration * penaltyMult));
+        currentQuality.vigorHydration = Math.max(minConditionFloor, currentQuality.vigorHydration + Math.round(triggeredHazard.penalties.vigorHydration * penaltyMult));
       }
       if (triggeredHazard.penalties.temperament) {
-        currentQuality.temperament = Math.max(15, currentQuality.temperament + Math.round(triggeredHazard.penalties.temperament * penaltyMult));
+        currentQuality.temperament = Math.max(minConditionFloor, currentQuality.temperament + Math.round(triggeredHazard.penalties.temperament * penaltyMult));
       }
       if (triggeredHazard.penalties.poseTraining) {
-        currentQuality.poseTraining = Math.max(15, currentQuality.poseTraining + Math.round(triggeredHazard.penalties.poseTraining * penaltyMult));
+        currentQuality.poseTraining = Math.max(minConditionFloor, currentQuality.poseTraining + Math.round(triggeredHazard.penalties.poseTraining * penaltyMult));
       }
 
-      // Incur supply loss if hazard damages wagon stores
-      if (triggeredHazard.penalties.supplies?.feed && newSupplies.feed) {
-        newSupplies.feed = Math.max(5, newSupplies.feed + triggeredHazard.penalties.supplies.feed);
-      }
-      if (triggeredHazard.penalties.supplies?.water && newSupplies.water) {
-        newSupplies.water = Math.max(5, newSupplies.water + triggeredHazard.penalties.supplies.water);
-      }
-      if (triggeredHazard.penalties.supplies?.bedding && newSupplies.bedding) {
-        newSupplies.bedding = Math.max(5, newSupplies.bedding + triggeredHazard.penalties.supplies.bedding);
+      // Incur supply loss if hazard damages wagon stores (waived for Cloverbuds)
+      if (division !== 'cloverbud') {
+        if (triggeredHazard.penalties.supplies?.feed && newSupplies.feed) {
+          newSupplies.feed = Math.max(5, newSupplies.feed + triggeredHazard.penalties.supplies.feed);
+        }
+        if (triggeredHazard.penalties.supplies?.water && newSupplies.water) {
+          newSupplies.water = Math.max(5, newSupplies.water + triggeredHazard.penalties.supplies.water);
+        }
+        if (triggeredHazard.penalties.supplies?.bedding && newSupplies.bedding) {
+          newSupplies.bedding = Math.max(5, newSupplies.bedding + triggeredHazard.penalties.supplies.bedding);
+        }
       }
     }
 

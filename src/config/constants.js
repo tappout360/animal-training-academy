@@ -109,9 +109,12 @@ export const CONTENT_STATUSES = {
   ARCHIVED: 'archived'
 };
 
+export const ACCURACY_POLICY_STATEMENT = 'Reviewed under Academy Accuracy Policy. Independent educational training platform; not an official product or endorsement of 4-H, USDA, ARBA, or Extension.';
+
 export const KNOWLEDGE_TIERS = {
-  TIER_1_OFFICIAL: 'Tier 1: Approved Curriculum & Extension Standards',
-  TIER_2_COMMUNITY: 'Tier 2: Verified Educator Submissions',
+  TIER_1_OFFICIAL: 'Tier 1: Approved Academy Core Curriculum (Reviewed under Accuracy Policy)',
+  TIER_1_INTERNAL: 'Tier 1: Approved Academy Core Curriculum (Reviewed under Accuracy Policy)',
+  TIER_2_COMMUNITY: 'Tier 2: Verified Educator & Club Submissions',
   TIER_3_DRAFT: 'Tier 3: Unapproved Draft (Staff View Only)'
 };
 

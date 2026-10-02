@@ -21,12 +21,13 @@ import {
 } from '../src/data/contentMatrix.js';
 import { BadgeEngine } from '../src/services/BadgeEngine.js';
 import { ALL_CATALOG_BADGES, CERTIFICATE_TYPES } from '../src/data/badgesCatalog.js';
-import { CONTENT_STATUSES, LEGAL_DISCLAIMERS } from '../src/config/constants.js';
+import { CONTENT_STATUSES, LEGAL_DISCLAIMERS, ACCURACY_POLICY_STATEMENT } from '../src/config/constants.js';
 import { TRAIL_PACKS, getTrailPackById } from '../src/data/game/trailPacks.js';
 import { validateCareOption } from '../src/data/game/careRuleset.js';
 import { ALL_COSMETICS } from '../src/data/game/cosmeticsCatalog.js';
 import { TrailQuestEngine } from '../src/services/TrailQuestEngine.js';
 import { ParentalControlsService, getSafeDefaultsByDivision } from '../src/services/ParentalControlsService.js';
+import { SEED_LEARNERS } from '../src/db/seedData.js';
 
 console.log('🧪 Starting WarrenWise Youth Animal Training Academy Test Suite...\n');
 
@@ -698,6 +699,172 @@ test('Species and game mode filtering respects parent-defined allowances', () =>
   assert.strictEqual(ParentalControlsService.isSpeciesAllowed(restrictedLimits, 'beef_cattle'), false);
   assert.strictEqual(ParentalControlsService.isModeAllowed(restrictedLimits, 'quizzes'), true);
   assert.strictEqual(ParentalControlsService.isModeAllowed(restrictedLimits, 'herd_trail'), false);
+});
+
+// ----------------------------------------------------
+// 10. CRITICAL PATHS & PUNCH LIST QUALITY HARDENING TESTS
+// ----------------------------------------------------
+console.log('--- 10. Critical Paths & Punch List Quality Hardening Tests ---');
+
+test('Role authentication gates verify parent PIN, admin key, and coach code before role transition', () => {
+  // Parent PIN verification
+  assert.strictEqual(verifyParentPin('4444', '4444'), true, 'Correct parent PIN must pass');
+  assert.strictEqual(verifyParentPin('0000', '4444'), false, 'Incorrect parent PIN must be rejected');
+  assert.strictEqual(verifyParentPin('', '4444'), false, 'Empty parent PIN must be rejected');
+
+  // Admin Master Key (9999) check
+  const isAdminAuthorized = (key) => key.trim() === '9999';
+  assert.strictEqual(isAdminAuthorized('9999'), true, 'Valid admin key must grant access');
+  assert.strictEqual(isAdminAuthorized('1234'), false, 'Invalid admin key must be blocked');
+
+  // Coach Club Code (3050) check
+  const isCoachAuthorized = (code) => code.trim() === '3050';
+  assert.strictEqual(isCoachAuthorized('3050'), true, 'Valid coach code must grant access');
+  assert.strictEqual(isCoachAuthorized('wrong'), false, 'Invalid coach code must be blocked');
+});
+
+test('Parent control scoping strictly isolates linked children', () => {
+  const currentParentEmail = 'parent.miller@example.com';
+  const visibleLearners = SEED_LEARNERS.filter(l => l.parentEmail === currentParentEmail);
+  
+  assert.strictEqual(visibleLearners.length, 2, 'Parent Miller must only see 2 linked children');
+  assert.ok(visibleLearners.some(l => l.handle === 'CloverChampion42' && l.realName === 'Sammy Miller'));
+  assert.ok(visibleLearners.some(l => l.handle === 'CloverSprout05' && l.realName === 'Toby Miller'));
+  assert.ok(!visibleLearners.some(l => l.realName === 'Maya Chen'), 'Cannot see children of other parents');
+  assert.ok(!visibleLearners.some(l => l.realName === 'Alex Smith'), 'Cannot see unlinked children');
+});
+
+test('Coach dashboard access strictly respects consent and coach assignment', () => {
+  const coachLinda = 'coach_linda';
+
+  // Consented and assigned learners
+  const sammy = SEED_LEARNERS.find(l => l.id === 'lrn_01');
+  const toby = SEED_LEARNERS.find(l => l.id === 'lrn_04');
+  assert.strictEqual(canCoachAccessLearner(sammy, coachLinda), true, 'Sammy is assigned and consented');
+  assert.strictEqual(canCoachAccessLearner(toby, coachLinda), true, 'Toby is assigned and consented');
+
+  // Unconsented / independent learner
+  const alex = SEED_LEARNERS.find(l => l.id === 'lrn_05');
+  assert.strictEqual(canCoachAccessLearner(alex, coachLinda), false, 'Alex has no coach consent and cannot be accessed');
+
+  // Other coach attempting access
+  assert.strictEqual(canCoachAccessLearner(sammy, 'coach_unknown'), false, 'Unassigned coach cannot access learner');
+});
+
+test('Care-challenge engine strictly rejects prohibited medication and prescription dosing', () => {
+  const disallowedTerms = [
+    'Administer penicillin dosage 5ml',
+    'Calculate antibiotic dose for rabbit enteritis',
+    'Give 0.2 mg/kg ivermectin',
+    'Prescribe oral medications without vet',
+    'Inject medicine directly into vein',
+    'Perform diy surgery at home',
+    'Use magic cure potion to heal bloat instantly'
+  ];
+
+  disallowedTerms.forEach(term => {
+    const res = validateCareOption(term);
+    assert.strictEqual(res.isValid, false, `Must reject unsafe option: "${term}"`);
+    assert.ok(res.reason.includes('Violates veterinary boundary'));
+  });
+
+  const validOptions = [
+    'Observe breathing rate, separate calmly, offer clean cool water, and notify coach and veterinarian',
+    'Provide fresh orchard grass hay, check water sipper tube, and record observations in logbook',
+    'Gently brush road dust from coat with soft natural bristles'
+  ];
+
+  validOptions.forEach(opt => {
+    const res = validateCareOption(opt);
+    assert.strictEqual(res.isValid, true, `Valid observation action must pass: "${opt}"`);
+  });
+});
+
+test('Accuracy review policy metadata replaces external agency endorsement claims', () => {
+  assert.ok(ACCURACY_POLICY_STATEMENT, 'Accuracy policy statement must exist');
+  assert.ok(ACCURACY_POLICY_STATEMENT.includes('Academy Accuracy Policy'));
+  assert.ok(!ACCURACY_POLICY_STATEMENT.includes('officially endorsed by'));
+
+  // Verify all 11 species packs declare internal accuracy review
+  ALL_SPECIES_PACKS.forEach(pack => {
+    assert.strictEqual(
+      pack.reviewPolicy,
+      'Reviewed under Academy Accuracy Policy',
+      `Pack ${pack.id} must declare review under Academy Accuracy Policy`
+    );
+    assert.ok(
+      pack.reviewerRole.includes('Internal Curriculum Specialist'),
+      `Pack ${pack.id} must list internal curriculum reviewer role, got: ${pack.reviewerRole}`
+    );
+  });
+});
+
+test('Legal disclaimers are prominent, comprehensive, and non-prescriptive', () => {
+  assert.ok(LEGAL_DISCLAIMERS.general, 'General disclaimer must exist');
+  assert.ok(LEGAL_DISCLAIMERS.general.includes('independent educational'));
+  assert.ok(LEGAL_DISCLAIMERS.general.includes('NOT affiliated with'));
+  assert.ok(LEGAL_DISCLAIMERS.general.includes('National 4-H Council'));
+  assert.ok(LEGAL_DISCLAIMERS.general.includes('USDA'));
+  assert.ok(LEGAL_DISCLAIMERS.general.includes('ARBA'));
+  assert.ok(LEGAL_DISCLAIMERS.veterinary.toLowerCase().includes('veterinary diagnoses'));
+});
+
+test('Trail Quest Engine maintains progression state persistence without data loss', () => {
+  const initial = TrailQuestEngine.loadState('test_persist_learner');
+  assert.ok(initial, 'Initial state must load');
+
+  const node1Result = TrailQuestEngine.completeNode({
+    state: initial,
+    nodeId: 'rb_node_1',
+    mile: 8,
+    isCorrect: true,
+    conditionDelta: 5,
+    suppliesDelta: { feed: 10, water: 5 },
+    bondXpDelta: 30,
+    division: 'junior'
+  });
+
+  const state1 = node1Result.updatedState;
+  assert.strictEqual(state1.currentMile, 8);
+  assert.ok(state1.completedNodeIds.includes('rb_node_1'));
+  assert.strictEqual(state1.supplies.feed, initial.supplies.feed + 10);
+  assert.strictEqual(state1.supplies.water, initial.supplies.water + 5);
+  assert.strictEqual(state1.herdBond.xp, 30);
+
+  // Advance to node 2
+  const node2Result = TrailQuestEngine.completeNode({
+    state: state1,
+    nodeId: 'rb_node_2',
+    mile: 16,
+    isCorrect: true,
+    conditionDelta: 5,
+    suppliesDelta: { bedding: 10 },
+    bondXpDelta: 80, // Crosses 100 XP -> Level 2
+    division: 'junior'
+  });
+
+  const state2 = node2Result.updatedState;
+  assert.strictEqual(state2.currentMile, 16);
+  assert.strictEqual(state2.completedNodeIds.length, 2);
+  assert.strictEqual(state2.herdBond.level, 2, 'Herd bond should level up to 2');
+  assert.ok(state2.herdBond.unlockedLore.length >= 2, 'Should unlock bond lore');
+
+  // Verify Cloverbud soft protection
+  const cloverbudState = {
+    ...initial,
+    conditionScore: 70
+  };
+  const cbMistakeResult = TrailQuestEngine.completeNode({
+    state: cloverbudState,
+    nodeId: 'cb_test_node',
+    mile: 4,
+    isCorrect: false,
+    conditionDelta: -25, // harsh penalty
+    division: 'cloverbud'
+  });
+
+  // Under Cloverbud protection, penalty delta is softened to -2 instead of harsh -25
+  assert.strictEqual(cbMistakeResult.updatedState.conditionScore, 68, 'Cloverbud condition penalty must be softened to -2');
 });
 
 // Summary

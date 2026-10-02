@@ -44,6 +44,34 @@ export const SEED_LEARNERS = [
     streakDays: 7,
     xp: 950,
     createdAt: '2026-08-15'
+  },
+  {
+    id: 'lrn_04',
+    handle: 'CloverSprout05',
+    realName: 'Toby Miller',
+    ageDivision: 'cloverbud',
+    parentEmail: 'parent.miller@example.com',
+    parentConsentGranted: true,
+    coachId: 'coach_linda',
+    clubName: 'Evergreen 4-H Club',
+    avatar: 'Sparkles',
+    streakDays: 3,
+    xp: 210,
+    createdAt: '2026-09-12'
+  },
+  {
+    id: 'lrn_05',
+    handle: 'IndependentScholar99',
+    realName: 'Alex Smith',
+    ageDivision: 'junior',
+    parentEmail: 'parent.smith@example.com',
+    parentConsentGranted: false, // Explicitly no coach consent
+    coachId: null,
+    clubName: 'Independent Home Project',
+    avatar: 'Compass',
+    streakDays: 1,
+    xp: 90,
+    createdAt: '2026-09-28'
   }
 ];
 

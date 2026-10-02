@@ -36,8 +36,10 @@ export default function ModuleBrowser({
           <div className="text-xs text-emerald-200">
             Last Verified: <span className="font-semibold text-white">{pack.lastVerifiedDate}</span>
           </div>
-          <div className="text-[11px] bg-emerald-700/60 border border-emerald-400/40 text-emerald-100 px-2.5 py-1 rounded-full">
-            {pack.verifiedBy}
+          <div className="text-[11px] bg-emerald-700/60 border border-emerald-400/40 text-emerald-100 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-xs">
+            <span className="font-bold">{pack.reviewPolicy || 'Reviewed under Academy Accuracy Policy'}</span>
+            <span className="text-emerald-300">·</span>
+            <span>{pack.reviewerRole || 'Internal Curriculum Specialist'}</span>
           </div>
         </div>
       </div>

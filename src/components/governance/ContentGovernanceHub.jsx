@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { 
   ShieldCheck, AlertTriangle, Clock, CheckCircle2, 
   RotateCcw, History, FileText, Check, X, ShieldAlert,
-  CheckSquare
+  CheckSquare, Archive
 } from 'lucide-react';
 import { CONTENT_STATUSES, KNOWLEDGE_TIERS } from '../../config/constants';
 import { 
@@ -56,6 +56,25 @@ export default function ContentGovernanceHub({
     setItems(updated);
     setSelectedItem(rolled);
     if (onUpdateItem) onUpdateItem(rolled);
+  };
+
+  const handleArchive = (item) => {
+    setErrorMessage('');
+    const result = transitionContentStatus({
+      item,
+      newStatus: CONTENT_STATUSES.ARCHIVED,
+      reviewerName
+    });
+
+    if (!result.success) {
+      setErrorMessage(result.error);
+      return;
+    }
+
+    const updated = items.map(i => i.id === item.id ? result.item : i);
+    setItems(updated);
+    setSelectedItem(result.item);
+    if (onUpdateItem) onUpdateItem(result.item);
   };
 
   return (
@@ -253,7 +272,7 @@ export default function ContentGovernanceHub({
                 </div>
               </div>
 
-              {/* Actions: Approve / Reject / Rollback */}
+              {/* Actions: Approve / Archive / Rollback */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
                 <div className="flex items-center gap-2">
                   <button
@@ -263,6 +282,15 @@ export default function ContentGovernanceHub({
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Rollback to v2.3.0</span>
                   </button>
+                  {selectedItem.status !== CONTENT_STATUSES.ARCHIVED && (
+                    <button
+                      onClick={() => handleArchive(selectedItem)}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 shadow-2xs transition-all"
+                    >
+                      <Archive className="w-3.5 h-3.5" />
+                      <span>Archive Version</span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">

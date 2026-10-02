@@ -10,7 +10,9 @@ export const BEEF_CATTLE_PACK = {
   icon: 'Shield',
   version: '1.0.0',
   lastVerifiedDate: '2026-09-20',
-  verifiedBy: 'Extension Beef Specialist & NCBA Youth Committee',
+  reviewPolicy: 'Reviewed under Academy Accuracy Policy',
+  reviewerRole: 'Internal Curriculum Specialist (Beef & Large Stock)',
+  verifiedBy: 'Reviewed under Academy Accuracy Policy',
   description: 'Comprehensive 4-H beef curriculum covering British vs Continental breeds, ruminant nutrition, show halter and show stick handling, USDA Quality/Yield grading, and ethics.',
   targetDivisions: ['cloverbud', 'junior', 'intermediate', 'senior'],
   modules: [

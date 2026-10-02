@@ -10,7 +10,9 @@ export const VET_SCIENCE_PACK = {
   icon: 'Activity',
   version: '1.0.0',
   lastVerifiedDate: '2026-09-22',
-  verifiedBy: 'State Extension Veterinary Extension Specialist & DVM Educational Advisory Panel',
+  reviewPolicy: 'Reviewed under Academy Accuracy Policy',
+  reviewerRole: 'Internal Curriculum Specialist (Veterinary Science)',
+  verifiedBy: 'Reviewed under Academy Accuracy Policy',
   description: 'Comprehensive 4-H veterinary science knowledge track requiring no owned animal. Covers comparative anatomy, clinical restraint, immunology, diagnostic parasitology, SOAP charting, surgical asepsis, and One Health principles.',
   targetDivisions: ['cloverbud', 'junior', 'intermediate', 'senior'],
   modules: [

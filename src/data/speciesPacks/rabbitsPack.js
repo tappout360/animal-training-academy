@@ -10,7 +10,9 @@ export const RABBITS_PACK = {
   icon: 'Rabbit',
   version: '2.4.0',
   lastVerifiedDate: '2026-08-15',
-  verifiedBy: 'Extension Small Animal Specialist & ARBA Youth Advisory Board',
+  reviewPolicy: 'Reviewed under Academy Accuracy Policy',
+  reviewerRole: 'Internal Curriculum Specialist (Small Animal)',
+  verifiedBy: 'Reviewed under Academy Accuracy Policy',
   description: 'Comprehensive 4-H rabbit project mastery covering ARBA breed standards, 12-step showmanship, daily husbandry, biosecurity, and project ethics.',
   targetDivisions: ['cloverbud', 'junior', 'intermediate', 'senior'],
   modules: [

@@ -10,7 +10,9 @@ export const DOGS_PACK = {
   icon: 'Heart',
   version: '1.0.0',
   lastVerifiedDate: '2026-09-22',
-  verifiedBy: 'State Extension 4-H Dog Advisory Board & Certified Canine Behavior Consultant',
+  reviewPolicy: 'Reviewed under Academy Accuracy Policy',
+  reviewerRole: 'Internal Curriculum Specialist (Canine Education)',
+  verifiedBy: 'Reviewed under Academy Accuracy Policy',
   description: 'Complete 4-H dog project curriculum covering AKC breed groups, positive reinforcement training, ring patterns, rabies/DHPP prevention, heartworm awareness, and ethical sportsmanship.',
   targetDivisions: ['cloverbud', 'junior', 'intermediate', 'senior'],
   modules: [

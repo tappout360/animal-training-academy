@@ -10,7 +10,9 @@ export const SWINE_PACK = {
   icon: 'Shield',
   version: '1.0.0',
   lastVerifiedDate: '2026-09-20',
-  verifiedBy: 'Extension Swine Specialist & National Swine Registry (NSR) Youth Board',
+  reviewPolicy: 'Reviewed under Academy Accuracy Policy',
+  reviewerRole: 'Internal Curriculum Specialist (Swine Science)',
+  verifiedBy: 'Reviewed under Academy Accuracy Policy',
   description: 'Comprehensive 4-H swine curriculum covering the 8 major breeds, universal ear notching system, monogastric lysine nutrition, African Swine Fever biosecurity, driving showmanship, and pork quality.',
   targetDivisions: ['cloverbud', 'junior', 'intermediate', 'senior'],
   modules: [

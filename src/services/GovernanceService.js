@@ -14,10 +14,12 @@ export const INITIAL_GOVERNANCE_ITEMS = [
     version: '2.4.0',
     status: CONTENT_STATUSES.APPROVED,
     safetyReviewed: true,
-    safetyReviewerName: 'Dr. E. Vance, DVM (State Extension)',
+    safetyReviewerName: 'Internal Veterinary Reviewer (DVM)',
+    reviewerRole: 'Internal Veterinary Reviewer',
+    reviewPolicy: 'Reviewed under Academy Accuracy Policy',
     lastVerifiedDate: '2026-08-15',
-    tier: KNOWLEDGE_TIERS.TIER_1_OFFICIAL,
-    notes: 'Verified compliance with zero veterinary prescription rules and updated RHDV2 vaccination guidelines.'
+    tier: KNOWLEDGE_TIERS.TIER_1_INTERNAL,
+    notes: 'Verified compliance with zero veterinary prescription rules and updated RHDV2 observation guidelines.'
   },
   {
     id: 'gov_cv_01',
@@ -27,9 +29,11 @@ export const INITIAL_GOVERNANCE_ITEMS = [
     version: '2.1.0',
     status: CONTENT_STATUSES.APPROVED,
     safetyReviewed: true,
-    safetyReviewerName: 'Sarah Jenkins, MS (Extension Small Animal)',
+    safetyReviewerName: 'Internal Small Animal Specialist',
+    reviewerRole: 'Internal Curriculum Specialist',
+    reviewPolicy: 'Reviewed under Academy Accuracy Policy',
     lastVerifiedDate: '2026-08-20',
-    tier: KNOWLEDGE_TIERS.TIER_1_OFFICIAL,
+    tier: KNOWLEDGE_TIERS.TIER_1_INTERNAL,
     notes: 'Re-verified daily 10-30 mg requirement and warnings against water bottle additives.'
   },
   {
@@ -41,9 +45,11 @@ export const INITIAL_GOVERNANCE_ITEMS = [
     status: CONTENT_STATUSES.IN_REVIEW,
     safetyReviewed: false, // Animal welfare topic requiring safety signoff before approval
     safetyReviewerName: null,
+    reviewerRole: 'Pending Safety Reviewer',
+    reviewPolicy: 'Reviewed under Academy Accuracy Policy',
     lastVerifiedDate: '2026-09-28',
     tier: KNOWLEDGE_TIERS.TIER_3_DRAFT,
-    notes: 'Submitted by club leader; pending small animal veterinarian welfare sign-off.'
+    notes: 'Submitted by club leader; pending internal veterinary welfare sign-off.'
   },
   {
     id: 'gov_stale_sample',
@@ -53,9 +59,11 @@ export const INITIAL_GOVERNANCE_ITEMS = [
     version: '1.2.0',
     status: CONTENT_STATUSES.APPROVED,
     safetyReviewed: true,
-    safetyReviewerName: 'Historic Review Board',
+    safetyReviewerName: 'Internal Curriculum Reviewer',
+    reviewerRole: 'Internal Accuracy Reviewer',
+    reviewPolicy: 'Reviewed under Academy Accuracy Policy',
     lastVerifiedDate: '2025-01-10', // Over 12 months ago -> triggers stale alert
-    tier: KNOWLEDGE_TIERS.TIER_1_OFFICIAL,
+    tier: KNOWLEDGE_TIERS.TIER_1_INTERNAL,
     notes: 'Scheduled for annual re-verification.'
   }
 ];

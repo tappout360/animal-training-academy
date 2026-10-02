@@ -10,7 +10,9 @@ export const HORSES_PACK = {
   icon: 'Zap',
   version: '1.0.0',
   lastVerifiedDate: '2026-09-22',
-  verifiedBy: 'University Equine Extension Specialist & Certified Horsemanship Association (CHA) Judge',
+  reviewPolicy: 'Reviewed under Academy Accuracy Policy',
+  reviewerRole: 'Internal Curriculum Specialist (Equine Science)',
+  verifiedBy: 'Reviewed under Academy Accuracy Policy',
   description: 'Complete 4-H horse project curriculum covering breeds and colors, hindgut digestion, colic & laminitis prevention, ASTM/SEI helmet safety, the quarter system in showmanship, Coggins testing, and equine welfare.',
   targetDivisions: ['cloverbud', 'junior', 'intermediate', 'senior'],
   modules: [

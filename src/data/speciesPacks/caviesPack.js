@@ -10,7 +10,9 @@ export const CAVIES_PACK = {
   icon: 'Sparkles',
   version: '2.1.0',
   lastVerifiedDate: '2026-08-20',
-  verifiedBy: 'Extension Small Animal Specialist & ACBA/ARBA Cavy Judges Committee',
+  reviewPolicy: 'Reviewed under Academy Accuracy Policy',
+  reviewerRole: 'Internal Curriculum Specialist (Small Animal)',
+  verifiedBy: 'Reviewed under Academy Accuracy Policy',
   description: 'Complete 4-H cavy project curriculum covering ARBA recognized cavy breeds, unique Vitamin C requirements, solid-floor housing, showmanship mats, and ethics.',
   targetDivisions: ['cloverbud', 'junior', 'intermediate', 'senior'],
   modules: [
@@ -409,11 +411,11 @@ export const CAVIES_PACK = {
           }
         },
         senior: {
-          headline: 'Pharmacokinetics in Cavia, VCPR & Emergency Triage',
+          headline: 'Cavy Digestive Sensitivity, VCPR & Emergency Triage',
           sections: [
             {
-              title: 'Safe Small Animal Antibiotic Protocols',
-              body: 'Safe antibiotics overseen by exotic veterinarians include Enrofloxacin (Baytril), Trimethoprim-Sulfa (TMS), and Azithromycin, alongside supportive probiotics and critical care syringe feedings.'
+              title: 'Veterinary Oversight & Supportive Care Principles',
+              body: 'Because cavy cecal microflora is exceptionally fragile, systemic treatments must be diagnosed and prescribed exclusively by a licensed veterinarian. 4-H youth support recovery through strict isolation, calm temperature control, fresh long-stem hay, and veterinary-directed syringe hydration. Never administer unprescribed drugs or home remedies.'
             }
           ],
           quickCheck: {

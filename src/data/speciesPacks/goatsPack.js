@@ -10,7 +10,9 @@ export const GOATS_PACK = {
   icon: 'Shield',
   version: '2.0.0',
   lastVerifiedDate: '2026-09-15',
-  verifiedBy: 'Extension Livestock Specialist & ADGA/ABGA Youth Committee',
+  reviewPolicy: 'Reviewed under Academy Accuracy Policy',
+  reviewerRole: 'Internal Curriculum Specialist (Small Ruminants)',
+  verifiedBy: 'Reviewed under Academy Accuracy Policy',
   description: 'Comprehensive 4-H goat project curriculum covering ADGA dairy breeds, Boer meat goats, ruminant digestion, urinary calculi prevention, FAMACHA scoring, scrapie tags, show collars, and ethics.',
   targetDivisions: ['cloverbud', 'junior', 'intermediate', 'senior'],
   modules: [
