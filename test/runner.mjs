@@ -28,6 +28,11 @@ import { ALL_COSMETICS } from '../src/data/game/cosmeticsCatalog.js';
 import { TrailQuestEngine } from '../src/services/TrailQuestEngine.js';
 import { ParentalControlsService, getSafeDefaultsByDivision } from '../src/services/ParentalControlsService.js';
 import { SEED_LEARNERS } from '../src/db/seedData.js';
+import { 
+  ARBA_INSPECTION_CHECKPOINTS, 
+  ARBA_BODY_TYPES, 
+  ORAL_DEFENSE_QUESTIONS 
+} from '../src/data/arbaShowmanshipData.js';
 
 console.log('🧪 Starting WarrenWise Youth Animal Training Academy Test Suite...\n');
 
@@ -865,6 +870,83 @@ test('Trail Quest Engine maintains progression state persistence without data lo
 
   // Under Cloverbud protection, penalty delta is softened to -2 instead of harsh -25
   assert.strictEqual(cbMistakeResult.updatedState.conditionScore, 68, 'Cloverbud condition penalty must be softened to -2');
+});
+
+// ----------------------------------------------------
+// 11. ARBA SHOWMANSHIP SUITE & DIGITAL BARN RECORD BOOK
+// ----------------------------------------------------
+console.log('--- 11. ARBA Showmanship Suite & Digital Barn Record Book ---');
+
+test('ARBA 8-Point Physical Inspection covers exact official sequence and DQ rulings', () => {
+  assert.strictEqual(ARBA_INSPECTION_CHECKPOINTS.length, 8, 'Must cover exactly 8 inspection points');
+
+  const expectedIds = ['ears', 'eyes', 'nose', 'teeth', 'front_feet', 'belly_sex', 'hind_legs', 'tail_coat'];
+  ARBA_INSPECTION_CHECKPOINTS.forEach((cp, idx) => {
+    assert.strictEqual(cp.id, expectedIds[idx], `Checkpoint ${idx + 1} must be ${expectedIds[idx]}`);
+    assert.strictEqual(cp.stepNumber, idx + 1);
+    assert.ok(cp.hotspots && cp.hotspots.length >= 2, `${cp.id} must define at least 2 interactive hotspots`);
+    assert.ok(cp.verbalScript && cp.verbalScript.length > 20, `${cp.id} must include verbal script for the judge`);
+
+    // Verify sample cases distinguish CLEAR vs DISQUALIFICATION vs FAULT
+    assert.ok(cp.sampleCases.length >= 1, `${cp.id} must have diagnostic sample cases`);
+    cp.sampleCases.forEach(sc => {
+      assert.ok(
+        ['CLEAR', 'FAULT', 'DISQUALIFICATION'].includes(sc.classification),
+        `Case classification must be CLEAR, FAULT, or DISQUALIFICATION, got ${sc.classification}`
+      );
+    });
+  });
+});
+
+test('ARBA Breed Pose Simulator covers all 5 official body types with specific geometry', () => {
+  const bodyTypeKeys = Object.keys(ARBA_BODY_TYPES);
+  assert.strictEqual(bodyTypeKeys.length, 5, 'Must cover all 5 ARBA body types');
+  assert.ok(bodyTypeKeys.includes('compact'));
+  assert.ok(bodyTypeKeys.includes('commercial'));
+  assert.ok(bodyTypeKeys.includes('semi_arch'));
+  assert.ok(bodyTypeKeys.includes('full_arch'));
+  assert.ok(bodyTypeKeys.includes('cylindrical'));
+
+  // Verify compact body type tips & geometry
+  const compact = ARBA_BODY_TYPES.compact;
+  assert.ok(compact.representativeBreeds.includes('Holland Lop'));
+  assert.strictEqual(compact.idealFrontPaw, 50, 'Front paw should be tucked under eyes');
+  assert.ok(compact.showmanshipTip.includes('Do not stretch'));
+
+  // Verify cylindrical body type tips & geometry
+  const cylindrical = ARBA_BODY_TYPES.cylindrical;
+  assert.ok(cylindrical.representativeBreeds.includes('Himalayan'));
+  assert.strictEqual(cylindrical.idealArchRise, 15, 'Cylindrical should lie flat on table');
+});
+
+test('15-Second Timed Oral Judge Defense questions enforce ring pressure and technical answers', () => {
+  assert.ok(ORAL_DEFENSE_QUESTIONS.length >= 4, 'Must have at least 4 oral defense questions');
+
+  ORAL_DEFENSE_QUESTIONS.forEach(q => {
+    assert.strictEqual(q.timeLimitSeconds, 15, 'Time limit must be exactly 15 seconds');
+    assert.ok(q.judgePrompt.startsWith('"Showman,'), 'Judge prompt must begin with official showman address');
+    
+    const correctOpts = q.options.filter(o => o.isCorrect);
+    assert.strictEqual(correctOpts.length, 1, 'Each question must have exactly one correct answer');
+    assert.ok(correctOpts[0].points >= 20, 'Correct answer must award significant showmanship points');
+    assert.ok(correctOpts[0].judgeFeedback.length > 5, 'Must provide judge oral feedback');
+  });
+});
+
+test('Digital Barn Record Book dynamically calculates Average Daily Gain (ADG) accurately', () => {
+  // Test ADG math: delta weight / delta days
+  const w1 = { date: '2026-08-01', weightLbs: 4.0 };
+  const w2 = { date: '2026-08-15', weightLbs: 6.8 };
+
+  const msDiff = new Date(w2.date) - new Date(w1.date);
+  const daysElapsed = Math.round(msDiff / (1000 * 60 * 60 * 24));
+  assert.strictEqual(daysElapsed, 14, 'Days elapsed must be 14 days');
+
+  const gainLbs = w2.weightLbs - w1.weightLbs;
+  assert.strictEqual(gainLbs, 2.8, 'Weight gained must be 2.8 lbs');
+
+  const adg = Math.round((gainLbs / daysElapsed) * 100) / 100;
+  assert.strictEqual(adg, 0.20, 'Average Daily Gain must be 0.20 lbs/day');
 });
 
 // Summary

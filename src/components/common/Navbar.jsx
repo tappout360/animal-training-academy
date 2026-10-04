@@ -4,7 +4,7 @@ import React from 'react';
 import { 
   Sparkles, Bot, Flame, Wifi, WifiOff, Award, 
   BookOpen, Target, CheckSquare, ShieldCheck, Users, BarChart3, HelpCircle,
-  Compass, Map
+  Compass, Map, ClipboardList
 } from 'lucide-react';
 import RoleSwitcher from './RoleSwitcher';
 
@@ -133,6 +133,15 @@ export default function Navbar({
               >
                 <Award className="w-3.5 h-3.5 text-purple-600" />
                 <span>Showmanship Oral Studio</span>
+              </button>
+              <button
+                onClick={() => onSelectTab('record_book')}
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
+                  activeTab === 'record_book' ? 'bg-white text-emerald-800 shadow-xs border border-slate-200 font-bold' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <ClipboardList className="w-3.5 h-3.5 text-teal-600" />
+                <span>Fair Record Book</span>
               </button>
               <button
                 onClick={() => onSelectTab('ethics')}

@@ -6,6 +6,9 @@ import {
   CheckCircle2, ChevronRight, ChevronLeft, Mic, HelpCircle 
 } from 'lucide-react';
 import { SHOWMANSHIP_ROUTINES } from '../../data/showmanshipData';
+import TableInspectionSim from '../showmanship/TableInspectionSim';
+import BreedPoseCanvas from '../showmanship/BreedPoseCanvas';
+import JudgeDefenseRing from '../showmanship/JudgeDefenseRing';
 
 export default function ShowmanshipOralStudio({ selectedSpeciesId = 'rabbits', division = 'junior' }) {
   const speciesKey = selectedSpeciesId === 'cavies' ? 'cavies' : 'rabbits';
@@ -58,26 +61,46 @@ export default function ShowmanshipOralStudio({ selectedSpeciesId = 'rabbits', d
         </p>
 
         {/* Studio Sub-tabs */}
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-purple-800/80">
+        <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-purple-800/80">
           <button
             onClick={() => setActiveTab('routine')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'routine'
                 ? 'bg-white text-purple-950 shadow-sm'
                 : 'bg-purple-800/60 text-purple-200 hover:bg-purple-800'
             }`}
           >
-            Step-by-Step Table Routine ({routineData.totalSteps} Steps)
+            1. Table Routine ({routineData.totalSteps} Steps)
           </button>
           <button
-            onClick={() => setActiveTab('judge_simulator')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'judge_simulator'
+            onClick={() => setActiveTab('inspection_sim')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'inspection_sim'
                 ? 'bg-white text-purple-950 shadow-sm'
                 : 'bg-purple-800/60 text-purple-200 hover:bg-purple-800'
             }`}
           >
-            Judge Oral Questions Simulator
+            2. 8-Point Physical Exam (ARBA Sim)
+          </button>
+          <button
+            onClick={() => setActiveTab('pose_sim')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'pose_sim'
+                ? 'bg-white text-purple-950 shadow-sm'
+                : 'bg-purple-800/60 text-purple-200 hover:bg-purple-800'
+            }`}
+          >
+            3. Breed Pose Simulator (5 Body Types)
+          </button>
+          <button
+            onClick={() => setActiveTab('judge_defense')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'judge_defense'
+                ? 'bg-white text-purple-950 shadow-sm'
+                : 'bg-purple-800/60 text-purple-200 hover:bg-purple-800'
+            }`}
+          >
+            4. 15s Timed Judge Defense
           </button>
         </div>
       </div>
@@ -316,6 +339,21 @@ export default function ShowmanshipOralStudio({ selectedSpeciesId = 'rabbits', d
             </button>
           </div>
         </div>
+      )}
+
+      {/* 2. ARBA 8-Point Physical Inspection Simulator */}
+      {activeTab === 'inspection_sim' && (
+        <TableInspectionSim />
+      )}
+
+      {/* 3. Interactive Breed Pose Simulator */}
+      {activeTab === 'pose_sim' && (
+        <BreedPoseCanvas />
+      )}
+
+      {/* 4. Timed 15s Judge Defense Ring */}
+      {activeTab === 'judge_defense' && (
+        <JudgeDefenseRing />
       )}
     </div>
   );

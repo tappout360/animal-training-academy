@@ -21,6 +21,7 @@ import HerdTrailQuest from './components/game/HerdTrailQuest';
 import YouthSessionGuard from './components/common/YouthSessionGuard';
 import ParentControlCenter from './components/parent/ParentControlCenter';
 import RoleAuthGateModal from './components/common/RoleAuthGateModal';
+import BarnRecordBook from './components/recordbook/BarnRecordBook';
 
 import { getSpeciesPackById } from './data/speciesPacks';
 import { canCoachAccessLearner } from './services/YouthSafetyService';
@@ -219,6 +220,13 @@ export default function App() {
                     <ShowmanshipOralStudio
                       selectedSpeciesId={selectedSpeciesId}
                       division={activeDivision}
+                    />
+                  )}
+
+                  {activeTab === 'record_book' && (
+                    <BarnRecordBook
+                      learnerId={currentLearner.id}
+                      learnerHandle={currentLearner.handle}
                     />
                   )}
 
