@@ -16,6 +16,7 @@ export default function Navbar({
   isOfflineMode,
   onToggleOffline,
   onOpenAiTrainer,
+  onOpenPlans,
   learner
 }) {
   return (
@@ -79,6 +80,16 @@ export default function Navbar({
           >
             <Bot className="w-4 h-4" />
             <span>WarrenWise AI</span>
+          </button>
+
+          {/* Passes & Plans Launcher */}
+          <button
+            onClick={onOpenPlans}
+            className="flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-2xs"
+            title="View Academy Plans & Add-Ons"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+            <span className="hidden sm:inline">Passes &amp; Plans</span>
           </button>
 
           {/* Role Switcher */}

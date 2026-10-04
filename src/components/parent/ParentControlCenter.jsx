@@ -6,8 +6,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, Clock, Calendar, Shield, Sparkles, AlertTriangle, 
   CheckCircle2, KeyRound, Lock, Unlock, Moon, Sun, Heart, 
-  PauseCircle, PlayCircle, Eye, Bot, LogOut, History, Save, ChevronRight
+  PauseCircle, PlayCircle, Eye, Bot, LogOut, History, Save, ChevronRight,
+  CreditCard
 } from 'lucide-react';
+import ParentSubscriptionTab from './ParentSubscriptionTab';
 import { 
   ParentalControlsService, 
   TIME_LIMIT_OPTIONS, 
@@ -247,6 +249,18 @@ export default function ParentControlCenter({
         >
           <History className="w-3.5 h-3.5" />
           <span>Audit Log ({auditLogs.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('subscription')}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+            activeTab === 'subscription'
+              ? 'bg-amber-600 text-white shadow-2xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <CreditCard className="w-3.5 h-3.5" />
+          <span>Membership &amp; Passes</span>
         </button>
       </div>
 
@@ -711,6 +725,16 @@ export default function ParentControlCenter({
             ))}
           </div>
         </div>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* TAB 5: MEMBERSHIP, SEATS & SUBSCRIPTIONS             */}
+      {/* ---------------------------------------------------- */}
+      {activeTab === 'subscription' && (
+        <ParentSubscriptionTab
+          parentEmail="parent.miller@example.com"
+          learners={childList}
+        />
       )}
 
       {/* PIN Verification Modal */}

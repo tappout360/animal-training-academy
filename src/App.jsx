@@ -22,6 +22,7 @@ import YouthSessionGuard from './components/common/YouthSessionGuard';
 import ParentControlCenter from './components/parent/ParentControlCenter';
 import RoleAuthGateModal from './components/common/RoleAuthGateModal';
 import BarnRecordBook from './components/recordbook/BarnRecordBook';
+import SubscriptionPlansModal from './components/billing/SubscriptionPlansModal';
 
 import { getSpeciesPackById } from './data/speciesPacks';
 import { canCoachAccessLearner } from './services/YouthSafetyService';
@@ -40,6 +41,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('modules'); 
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
 
   // Lesson & Quiz Drill-Down States
   const [activeLessonModule, setActiveLessonModule] = useState(null);
@@ -144,6 +146,7 @@ export default function App() {
         isOfflineMode={isOfflineMode}
         onToggleOffline={() => setIsOfflineMode(!isOfflineMode)}
         onOpenAiTrainer={() => setIsAiModalOpen(true)}
+        onOpenPlans={() => setIsSubscriptionModalOpen(true)}
         learner={currentLearner}
       />
 
@@ -312,6 +315,13 @@ export default function App() {
         isOpen={!!gateTargetRole}
         onSuccess={handleGateSuccess}
         onClose={() => setGateTargetRole(null)}
+      />
+
+      {/* Subscription & Pricing Modal */}
+      <SubscriptionPlansModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
+        parentEmail="parent.miller@example.com"
       />
 
       {/* Persistent Legal & Accuracy Footer */}

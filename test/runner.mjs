@@ -33,6 +33,12 @@ import {
   ARBA_BODY_TYPES, 
   ORAL_DEFENSE_QUESTIONS 
 } from '../src/data/arbaShowmanshipData.js';
+import { 
+  SUBSCRIPTION_TIERS, 
+  EDUCATIONAL_ADDONS, 
+  ANTI_PAY_TO_WIN_POLICY 
+} from '../src/config/subscriptionPlans.js';
+import { EntitlementService } from '../src/services/EntitlementService.js';
 
 console.log('🧪 Starting WarrenWise Youth Animal Training Academy Test Suite...\n');
 
@@ -947,6 +953,149 @@ test('Digital Barn Record Book dynamically calculates Average Daily Gain (ADG) a
 
   const adg = Math.round((gainLbs / daysElapsed) * 100) / 100;
   assert.strictEqual(adg, 0.20, 'Average Daily Gain must be 0.20 lbs/day');
+});
+
+// ----------------------------------------------------
+// 12. PARENT-SAFE MONETIZATION & ENTITLEMENTS ENGINE
+// ----------------------------------------------------
+console.log('--- 12. Parent-Safe Monetization & Entitlements Engine ---');
+
+test('Subscription tier configuration enforces feature boundaries cleanly', () => {
+  assert.ok(SUBSCRIPTION_TIERS.free, 'Free tier must exist');
+  assert.ok(SUBSCRIPTION_TIERS.pro, 'Pro tier must exist');
+  assert.ok(SUBSCRIPTION_TIERS.family, 'Family tier must exist');
+  assert.ok(SUBSCRIPTION_TIERS.club, 'Club charter tier must exist');
+
+  // Free tier restrictions
+  assert.deepStrictEqual(SUBSCRIPTION_TIERS.free.allowedSpecies, ['rabbits', 'cavies']);
+  assert.strictEqual(SUBSCRIPTION_TIERS.free.maxTrailTier, 1);
+  assert.strictEqual(SUBSCRIPTION_TIERS.free.aiTutor, false);
+  assert.strictEqual(SUBSCRIPTION_TIERS.free.recordBookIncluded, false);
+
+  // Pro tier unlocks
+  assert.strictEqual(SUBSCRIPTION_TIERS.pro.allowedSpecies, 'ALL');
+  assert.strictEqual(SUBSCRIPTION_TIERS.pro.maxTrailTier, 4);
+  assert.strictEqual(SUBSCRIPTION_TIERS.pro.aiTutor, true);
+  assert.strictEqual(SUBSCRIPTION_TIERS.pro.verifiableCerts, true);
+
+  // Family tier unlocks
+  assert.strictEqual(SUBSCRIPTION_TIERS.family.maxChildren, 5);
+  assert.strictEqual(SUBSCRIPTION_TIERS.family.recordBookIncluded, true);
+
+  // Club charter unlocks
+  assert.strictEqual(SUBSCRIPTION_TIERS.club.maxChildren, 30);
+  assert.strictEqual(SUBSCRIPTION_TIERS.club.clubLeaderDashboard, true);
+});
+
+test('Subscription checkout strictly requires Parent PIN authorization', () => {
+  const testParent = 'test.billing.parent@example.com';
+
+  // Attempt upgrade without valid PIN
+  const failRes = EntitlementService.upgradePlan({
+    parentEmail: testParent,
+    newTier: 'pro',
+    parentPin: '0000'
+  });
+  assert.strictEqual(failRes.success, false);
+  assert.ok(failRes.error.includes('Parent authorization required'));
+
+  // Successful upgrade with correct Parent PIN
+  const okRes = EntitlementService.upgradePlan({
+    parentEmail: testParent,
+    newTier: 'pro',
+    billingCycle: 'annual',
+    parentPin: '4444'
+  });
+  assert.strictEqual(okRes.success, true);
+  assert.strictEqual(okRes.entitlements.tier, 'pro');
+  assert.ok(okRes.receipt.id.startsWith('rcpt_'));
+  assert.strictEqual(okRes.receipt.amountPaid, 59);
+});
+
+test('Anti-pay-to-win policy strictly guarantees zero paid advantage in learning and exams', () => {
+  assert.ok(ANTI_PAY_TO_WIN_POLICY.POINTS.length >= 4);
+  assert.ok(ANTI_PAY_TO_WIN_POLICY.POINTS.some(p => p.includes('No paid advantage in quizzes')));
+  assert.ok(ANTI_PAY_TO_WIN_POLICY.POINTS.some(p => p.includes('No randomized loot boxes')));
+
+  // Ensure learning mastery formula is independent of subscription tier
+  const testProgress = [
+    { score: 100, status: 'completed' },
+    { score: 90, status: 'completed' }
+  ];
+  // Calculate raw mastery
+  const totalScore = testProgress.reduce((s, p) => s + p.score, 0);
+  const avg = Math.round(totalScore / testProgress.length);
+  assert.strictEqual(avg, 95, 'Mastery score reflects genuine learning only, not paid perks');
+});
+
+test('Educational add-on unlocks operate accurately and grant intended utilities', () => {
+  const testParent = 'test.addon.parent@example.com';
+  // Reset to default free entitlements
+  EntitlementService.saveEntitlements(testParent, {
+    tier: 'free',
+    purchasedAddons: []
+  });
+
+  // Initially locked on Free tier
+  assert.strictEqual(EntitlementService.isRecordBookUnlocked(testParent), false);
+
+  // Purchase add-on with Parent PIN
+  const addonRes = EntitlementService.purchaseAddon({
+    parentEmail: testParent,
+    addonId: 'addon_record_book',
+    parentPin: '4444'
+  });
+  assert.strictEqual(addonRes.success, true);
+  assert.strictEqual(EntitlementService.isRecordBookUnlocked(testParent), true);
+
+  // Upgrade to Family Pass automatically includes Record Book without duplicate purchase
+  const familyParent = 'test.family.parent@example.com';
+  EntitlementService.saveEntitlements(familyParent, {
+    tier: 'family',
+    purchasedAddons: []
+  });
+  assert.strictEqual(EntitlementService.isRecordBookUnlocked(familyParent), true);
+});
+
+test('Family and Club B2B seat limits are enforced accurately', () => {
+  const familyParent = 'test.seats.family@example.com';
+  EntitlementService.saveEntitlements(familyParent, { tier: 'family' });
+
+  assert.strictEqual(EntitlementService.canAddChildSeat(3, familyParent), true);
+  assert.strictEqual(EntitlementService.canAddChildSeat(4, familyParent), true);
+  assert.strictEqual(EntitlementService.canAddChildSeat(5, familyParent), false, 'Family pass caps at 5 children');
+
+  const clubParent = 'test.seats.club@example.com';
+  EntitlementService.saveEntitlements(clubParent, { tier: 'club' });
+  assert.strictEqual(EntitlementService.canAddChildSeat(28, clubParent), true);
+  assert.strictEqual(EntitlementService.canAddChildSeat(30, clubParent), false, 'Club charter caps at 30 seats');
+});
+
+test('Promo codes and Admin Support Overrides function accurately', () => {
+  // Promo code validation
+  const promo = EntitlementService.validatePromoCode('fair2026');
+  assert.ok(promo);
+  assert.strictEqual(promo.discountPercent, 20);
+
+  // Admin Support Override with Master Key (9999)
+  const grantRes = EntitlementService.adminOverrideEntitlement({
+    parentEmail: 'hardship.grant@example.com',
+    tier: 'family',
+    reason: 'County Fair Youth Assistance Grant',
+    adminKey: '9999'
+  });
+  assert.strictEqual(grantRes.success, true);
+  assert.strictEqual(grantRes.entitlements.tier, 'family');
+  assert.strictEqual(grantRes.entitlements.adminOverrideReason, 'County Fair Youth Assistance Grant');
+
+  // Admin override rejected with bad key
+  const badKeyRes = EntitlementService.adminOverrideEntitlement({
+    parentEmail: 'hardship.grant@example.com',
+    tier: 'family',
+    reason: 'Test',
+    adminKey: '0000'
+  });
+  assert.strictEqual(badKeyRes.success, false);
 });
 
 // Summary

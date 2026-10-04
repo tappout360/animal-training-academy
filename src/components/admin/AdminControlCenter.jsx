@@ -3,9 +3,11 @@
 import React, { useState } from 'react';
 import { 
   ShieldCheck, Bot, ToggleLeft, ToggleRight, 
-  BarChart3, AlertTriangle, Users, Database, RefreshCw, CheckCircle2 
+  BarChart3, AlertTriangle, Users, Database, RefreshCw, CheckCircle2,
+  CreditCard
 } from 'lucide-react';
 import { INITIAL_FEATURE_FLAGS } from '../../config/constants';
+import AdminSubscriptionDashboard from './AdminSubscriptionDashboard';
 
 export default function AdminControlCenter({
   featureFlags = INITIAL_FEATURE_FLAGS,
@@ -92,6 +94,14 @@ export default function AdminControlCenter({
             }`}
           >
             Learner Drop-Off & Drop Rates
+          </button>
+          <button
+            onClick={() => setActiveTab('subscriptions')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'subscriptions' ? 'bg-white text-slate-900 shadow-sm' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            Subscriptions &amp; Revenue
           </button>
         </div>
       </div>
@@ -212,6 +222,11 @@ export default function AdminControlCenter({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Tab 4: Subscriptions & Institutional Licensing */}
+      {activeTab === 'subscriptions' && (
+        <AdminSubscriptionDashboard />
       )}
     </div>
   );
