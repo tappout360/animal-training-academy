@@ -93,6 +93,38 @@ export default function HerdTrailQuest({
     return result;
   };
 
+  // Resolve Day-1 to Day-7 Habit Loop Script
+  const handleResolveRabbitDay = ({ dayNumber, selectedOptionId, sequenceOrder, stationAnswers }) => {
+    const result = LivingHerdEngine.resolveRabbitDay({
+      learnerId: learner.id,
+      questState,
+      dayNumber,
+      selectedOptionId,
+      sequenceOrder,
+      stationAnswers
+    });
+
+    setQuestState(result.updatedQuestState);
+    TrailQuestEngine.saveState(learner.id, result.updatedQuestState);
+    setDailyStatus(LivingHerdEngine.getDailyStatus(learner.id, result.updatedQuestState));
+
+    if (result.isCorrect) {
+      setVictoryModalData({
+        earnedPoints: 50,
+        earnedBondXp: result.earnedBondXp,
+        earnedStars: result.earnedStars,
+        earnedTokens: result.earnedTokens,
+        isLevelUp: false,
+        newBondLevel: result.updatedQuestState.herdBond?.level || 1,
+        badgeEarned: result.practiceRibbon ? result.practiceRibbon.ribbon : `Day ${dayNumber} Master`,
+        cosmeticUnlock: result.rewards?.cosmeticSeed || 'Trail Scarf & Habitat Decoration',
+        tomorrowTeaser: result.tomorrowTease
+      });
+    }
+
+    return result;
+  };
+
   // Challenge Completion Handler
   const handleCompleteNode = ({
     nodeId,
@@ -417,6 +449,7 @@ export default function HerdTrailQuest({
             questState={questState}
             trailPack={currentTrailPack}
             onResolveNeed={handleResolveMorningNeed}
+            onResolveRabbitDay={handleResolveRabbitDay}
             onOpenTrailRun={() => setActiveTab('trail')}
             onOpenAiTrainer={onOpenAiTrainer}
           />

@@ -44,7 +44,10 @@ import {
   LIVING_HERD_NEEDS, 
   HERD_MOODS, 
   FAIR_SEASON_ARCS,
-  WEEKLY_MAGNET_EVENTS 
+  WEEKLY_MAGNET_EVENTS,
+  RABBIT_TRAIL_DAYS,
+  getRabbitDayScript,
+  HERD_MEMORY_TEMPLATE
 } from '../src/services/LivingHerdEngine.js';
 
 console.log('🧪 Starting WarrenWise Youth Animal Training Academy Test Suite...\n');
@@ -1220,6 +1223,165 @@ test('Fair Season Arc and Weekly Magnet Events are configured comprehensively', 
   assert.ok(WEEKLY_MAGNET_EVENTS.length >= 4, 'Must define weekly magnet events');
   assert.ok(WEEKLY_MAGNET_EVENTS.some(e => e.id === 'storm_weekend'), 'Must support Storm Weekend hazard event');
   assert.ok(WEEKLY_MAGNET_EVENTS.some(e => e.id === 'showring_saturday'), 'Must support Show-Ring Saturday clinic');
+});
+
+// --- 14. Day-1 to Day-7 Rabbit Trail Script & Habit Loop Tests ---
+console.log('\n--- 14. Day-1 to Day-7 Rabbit Trail Script & Habit Loop Tests ---');
+
+test('Rabbit Trail Script defines 7 full prototype-ready days featuring Barnaby (Holland Lop)', () => {
+  assert.strictEqual(RABBIT_TRAIL_DAYS.length, 7, 'Must define all 7 days for rabbit region');
+  
+  RABBIT_TRAIL_DAYS.forEach((d, idx) => {
+    assert.strictEqual(d.dayNumber, idx + 1);
+    assert.strictEqual(d.companionName, 'Barnaby');
+    assert.strictEqual(d.companionBreed, 'Holland Lop');
+    assert.ok(d.herdNeed, `Day ${d.dayNumber} must have herdNeed`);
+    assert.ok(d.barnCheckStory, `Day ${d.dayNumber} must have barnCheckStory`);
+    assert.ok(d.prompt, `Day ${d.dayNumber} must have prompt`);
+    assert.ok(d.correctOutcome, `Day ${d.dayNumber} must have correctOutcome`);
+    assert.ok(d.correctOutcome.herdReaction, `Day ${d.dayNumber} must have herdReaction`);
+    assert.ok(d.correctOutcome.tomorrowTease, `Day ${d.dayNumber} must have tomorrowTease`);
+    assert.ok(d.correctOutcome.rewards.mastery, `Day ${d.dayNumber} must have mastery reward`);
+    assert.ok(d.correctOutcome.rewards.cosmeticToken || d.correctOutcome.rewards.cosmeticSeed, `Day ${d.dayNumber} must have cosmetic/world reward`);
+
+    // Strict care rule: no medication/dosing actions
+    if (d.options) {
+      d.options.forEach(opt => {
+        if (opt.isCorrect) {
+          assert.doesNotMatch(opt.text, /pill|dosing|antibiotic|medication|bleach/i, 'Correct options cannot recommend unprescribed medications or toxic additives');
+        }
+      });
+    }
+  });
+});
+
+test('Day 1 to Day 3 progression tests settling in, heat safety, and biosecurity choices', () => {
+  const learnerId = 'test_habit_learner_d1_3';
+  const questState = { conditionScore: 80, herdBond: { level: 1, xp: 50 } };
+
+  // Day 1: Settling in choice
+  const res1 = LivingHerdEngine.resolveRabbitDay({
+    learnerId,
+    questState,
+    dayNumber: 1,
+    selectedOptionId: 'opt_1_a'
+  });
+  assert.strictEqual(res1.isCorrect, true);
+  assert.strictEqual(res1.herdReaction, 'Barnaby drinks, then soft-loafs near the front of the stall.');
+  assert.strictEqual(res1.tomorrowTease, 'Tomorrow may be warmer… shade planning matters.');
+  assert.ok(res1.updatedLivingState.completedDayNumbers.includes(1));
+
+  // Day 2: Heat safety choice
+  const res2 = LivingHerdEngine.resolveRabbitDay({
+    learnerId,
+    questState: res1.updatedQuestState,
+    dayNumber: 2,
+    selectedOptionId: 'opt_2_a'
+  });
+  assert.strictEqual(res2.isCorrect, true);
+  assert.strictEqual(res2.herdReaction, 'Breathing eases; Barnaby rests in shade with relaxed ears.');
+  assert.ok(res2.herdMemory.heatSafety >= 90, 'Heat safety memory trait should be boosted');
+
+  // Day 3: Biosecurity choice
+  const res3 = LivingHerdEngine.resolveRabbitDay({
+    learnerId,
+    questState: res2.updatedQuestState,
+    dayNumber: 3,
+    selectedOptionId: 'opt_3_a'
+  });
+  assert.strictEqual(res3.isCorrect, true);
+  assert.ok(res3.herdMemory.biosecurity >= 85, 'Biosecurity memory trait should be boosted');
+});
+
+test('Day 4 Showmanship Sequence enforces proper 4-step handling order', () => {
+  const learnerId = 'test_habit_learner_d4';
+  const questState = { conditionScore: 85, herdBond: { level: 2, xp: 120 } };
+
+  // Proper sequence: 1 (Approach calmly) -> 2 (Support hindquarters) -> 3 (Secure hold) -> 4 (Check orientation)
+  const successRes = LivingHerdEngine.resolveRabbitDay({
+    learnerId,
+    questState,
+    dayNumber: 4,
+    sequenceOrder: [1, 2, 3, 4]
+  });
+  assert.strictEqual(successRes.isCorrect, true);
+  assert.strictEqual(successRes.herdReaction, 'Barnaby stays steadier on the table, blinking calmly.');
+  assert.ok(successRes.herdMemory.handling >= 80, 'Handling memory trait should increase');
+
+  // Out of order sequence
+  const failRes = LivingHerdEngine.resolveRabbitDay({
+    learnerId,
+    questState,
+    dayNumber: 4,
+    sequenceOrder: [4, 1, 2, 3]
+  });
+  assert.strictEqual(failRes.isCorrect, false);
+});
+
+test('Day 5 Breed ID and Day 6 Ethics Crossroads promote knowledge and character', () => {
+  const learnerId = 'test_habit_learner_d5_6';
+  const questState = { conditionScore: 85, herdBond: { level: 2, xp: 140 } };
+
+  // Day 5: Holland Lop identification
+  const res5 = LivingHerdEngine.resolveRabbitDay({
+    learnerId,
+    questState,
+    dayNumber: 5,
+    selectedOptionId: 'opt_5_a'
+  });
+  assert.strictEqual(res5.isCorrect, true);
+  assert.strictEqual(res5.herdReaction, 'Companion “poses” as if showing profile, front paws square.');
+
+  // Day 6: Refusing unsafe shortcuts and providing honest assistance
+  const res6 = LivingHerdEngine.resolveRabbitDay({
+    learnerId,
+    questState: res5.updatedQuestState,
+    dayNumber: 6,
+    selectedOptionId: 'opt_6_a'
+  });
+  assert.strictEqual(res6.isCorrect, true);
+  assert.strictEqual(res6.herdReaction, 'Special trust glow; mentor dialogue unlock.');
+  assert.ok(res6.herdMemory.ethics >= 90, 'Ethics memory trait should be boosted');
+});
+
+test('Day 7 Show-Ring Saturday Mini Finale evaluates 3 stations and auto-posts to Family Barn Board', () => {
+  const learnerId = 'test_habit_learner_d7';
+  const questState = { conditionScore: 85, herdBond: { level: 2, xp: 160 } };
+
+  // Full clear: 3/3 stations correct
+  const res7 = LivingHerdEngine.resolveRabbitDay({
+    learnerId,
+    questState,
+    dayNumber: 7,
+    stationAnswers: {
+      st_1: 'Verify clean water sipper is flowing and move crate out of sun glare',
+      st_2: 'Compact Body Type',
+      st_3: 'Support hindquarters -> place front feet squarely -> rest hand gently on loin'
+    }
+  });
+
+  assert.strictEqual(res7.isCorrect, true);
+  assert.strictEqual(res7.practiceRibbon.ribbon, 'Practice Blue Ribbon');
+  assert.strictEqual(res7.herdReaction, 'Championship hop animation; campsite banner unlock.');
+  assert.strictEqual(res7.tomorrowTease, 'Week 2: Nutrition & Body Condition Trail.');
+
+  // Verify automated post on Family Barn Board
+  const posts = LivingHerdEngine.getFamilyBarnPosts(learnerId);
+  const week1Post = posts.find(p => p.badge === 'Week 1 Finale' || p.text.includes('Week 1 Trail Complete'));
+  assert.ok(week1Post, 'Must automatically post Week 1 completion celebration on Family Barn Board');
+  assert.ok(week1Post.text.includes('Practice Blue Ribbon'), 'Post highlights earned practice ribbon');
+});
+
+test('Herd Memory tracks all 5 core stewardship traits persistently', () => {
+  const learnerId = 'test_herd_memory_learner';
+  const status = LivingHerdEngine.getDailyStatus(learnerId);
+  const memory = status.herdMemory;
+
+  assert.ok(typeof memory.consistency === 'number');
+  assert.ok(typeof memory.ethics === 'number');
+  assert.ok(typeof memory.heatSafety === 'number');
+  assert.ok(typeof memory.handling === 'number');
+  assert.ok(typeof memory.biosecurity === 'number');
 });
 
 // Summary

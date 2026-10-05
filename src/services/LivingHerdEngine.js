@@ -1,6 +1,10 @@
-// WarrenWise Animal Academy - Living Herd Engine
-// Core Niche: "The only youth animal academy where what you learn today changes your herd's story tomorrow."
-// Features: Living Herd Clock, Warm Re-Entry, Herd Memory Traits, Dual Reward Spine, Fair Season Arc, Family Barn Board
+import { 
+  RABBIT_TRAIL_DAYS, 
+  getRabbitDayScript, 
+  HERD_MEMORY_TEMPLATE 
+} from '../data/game/rabbitTrailScript.js';
+
+export { RABBIT_TRAIL_DAYS, getRabbitDayScript, HERD_MEMORY_TEMPLATE };
 
 const LIVING_HERD_STORAGE_KEY = 'ww_living_herd_state_';
 const BARN_BOARD_STORAGE_KEY = 'ww_family_barn_board_';
@@ -344,6 +348,9 @@ export const DEFAULT_LIVING_HERD_STATE = {
   lastCheckDate: null,
   consecutiveDays: 1,
   currentMoodId: 'happy',
+  currentDayNumber: 1,
+  completedDayNumbers: [],
+  herdMemory: { ...HERD_MEMORY_TEMPLATE },
   memoryTraits: {
     consistency: 75,
     carefulness: 80,
@@ -501,6 +508,11 @@ export class LivingHerdEngine {
       currentMood,
       seasonArc,
       weeklyEvent,
+      currentDayNumber: state.currentDayNumber || 1,
+      completedDayNumbers: state.completedDayNumbers || [],
+      herdMemory: state.herdMemory || { ...HERD_MEMORY_TEMPLATE },
+      activeDayScript: getRabbitDayScript(state.currentDayNumber || 1),
+      allDayScripts: RABBIT_TRAIL_DAYS,
       memoryTraits: state.memoryTraits || DEFAULT_LIVING_HERD_STATE.memoryTraits,
       cosmeticTokens: state.cosmeticTokens || 25,
       masteryStars: state.masteryStars || 8
@@ -596,6 +608,168 @@ export class LivingHerdEngine {
       updatedQuestState,
       storyEntry,
       tomorrowTease: 'Tomorrow: Timberline Ridge Weather & Draft Inspection!'
+    };
+  }
+
+  /**
+   * Resolves Day-1 to Day-7 Habit Loop script challenge.
+   * Handles care_choices, trail_quiz, showmanship_sequence, catch_classify, ethics_scenario, and mini_fair_sim.
+   */
+  static resolveRabbitDay({
+    learnerId = 'current_learner',
+    questState = {},
+    dayNumber = 1,
+    selectedOptionId = null,
+    sequenceOrder = [],
+    stationAnswers = {}
+  }) {
+    const day = getRabbitDayScript(dayNumber);
+    if (!day) throw new Error(`Day script ${dayNumber} not found.`);
+
+    const livingState = LivingHerdEngine.loadLivingHerdState(learnerId);
+    const today = new Date().toISOString().split('T')[0];
+
+    let isCorrect = false;
+    let feedback = '';
+    let choiceDescription = '';
+    let stationScores = null;
+    let practiceRibbon = null;
+
+    // 1. Evaluate by challenge type
+    if (day.challengeType === 'showmanship_sequence') {
+      const expected = (day.sequenceSteps || []).map(s => s.step);
+      isCorrect = Array.isArray(sequenceOrder) && 
+        sequenceOrder.length === expected.length && 
+        sequenceOrder.every((val, idx) => val === expected[idx]);
+      feedback = isCorrect
+        ? 'Flawless sequence! Barnaby rests calmly with feet square on the table.'
+        : 'Sequence misstep: Always approach calmly before supporting hindquarters and securing hold.';
+      choiceDescription = isCorrect ? 'Completed calm 4-step table handling sequence in correct order.' : 'Practiced handling order steps.';
+    } else if (day.challengeType === 'mini_fair_sim') {
+      const stations = day.stations || [];
+      let correctCount = 0;
+      stationScores = stations.map((st, idx) => {
+        const userAns = stationAnswers[st.id] !== undefined ? stationAnswers[st.id] : stationAnswers[idx];
+        const correctOpt = st.options.find(o => o.isCorrect);
+        const matches = userAns === correctOpt?.text || userAns === correctOpt?.id || userAns === true;
+        if (matches) correctCount++;
+        return { station: st.stationName, passed: matches };
+      });
+
+      isCorrect = correctCount >= 2;
+      const tierKey = correctCount >= 3 ? 3 : (correctCount >= 2 ? 2 : 1);
+      practiceRibbon = day.scoringTiers[tierKey] || day.scoringTiers[1];
+
+      feedback = `Fair Day Sim Complete: ${correctCount}/3 Stations Passed. Awarded: ${practiceRibbon.ribbon}!`;
+      choiceDescription = `Completed Show-Ring Saturday Mini Finale (${correctCount}/3 stations).`;
+
+      // Auto-post to Family Barn Board upon Day 7 completion
+      LivingHerdEngine.addFamilyBarnPost(learnerId, {
+        authorName: 'CloverChampion42 (You)',
+        role: 'youth',
+        text: `Week 1 Trail Complete! Barnaby and I completed Show-Ring Saturday and earned the ${practiceRibbon.ribbon}! 🏆`,
+        photoEmoji: '🏆',
+        badge: 'Week 1 Finale'
+      });
+    } else {
+      const selectedOption = (day.options || []).find(o => o.id === selectedOptionId || o.text === selectedOptionId);
+      if (selectedOption) {
+        isCorrect = !!selectedOption.isCorrect;
+        feedback = selectedOption.feedback;
+        choiceDescription = selectedOption.text;
+      } else {
+        const correctOpt = (day.options || []).find(o => o.isCorrect);
+        isCorrect = false;
+        feedback = correctOpt?.feedback || 'Please choose a welfare-conscious action.';
+        choiceDescription = 'Reviewed stewardship choices.';
+      }
+    }
+
+    // 2. Update herdMemory: { consistency, ethics, heatSafety, handling, biosecurity }
+    const updatedHerdMemory = {
+      ...(livingState.herdMemory || HERD_MEMORY_TEMPLATE)
+    };
+    const traitKey = day.correctOutcome.memoryTrait;
+    const traitDelta = day.correctOutcome.traitDelta || 10;
+    if (traitKey && updatedHerdMemory[traitKey] !== undefined) {
+      updatedHerdMemory[traitKey] = Math.max(20, Math.min(100, updatedHerdMemory[traitKey] + (isCorrect ? traitDelta : -4)));
+    }
+
+    // Also update general memoryTraits
+    const updatedTraits = { ...(livingState.memoryTraits || DEFAULT_LIVING_HERD_STATE.memoryTraits) };
+    if (isCorrect) {
+      if (traitKey === 'ethics') updatedTraits.ethics = Math.min(100, (updatedTraits.ethics || 80) + 8);
+      else if (traitKey === 'consistency') updatedTraits.consistency = Math.min(100, (updatedTraits.consistency || 75) + 6);
+      else updatedTraits.carefulness = Math.min(100, (updatedTraits.carefulness || 80) + 6);
+    }
+
+    // 3. Rewards
+    const conditionDelta = isCorrect ? day.correctOutcome.conditionDelta : -4;
+    const bondDelta = isCorrect ? day.correctOutcome.bondDelta : 10;
+    const earnedStars = isCorrect ? (day.correctOutcome.rewards?.masteryStars || 1) : 0;
+    const earnedTokens = isCorrect ? (day.correctOutcome.rewards?.cosmeticToken || 5) : 1;
+
+    // 4. Create narrative Story Log entry
+    const storyEntry = {
+      id: `story_day_${dayNumber}_${Date.now()}`,
+      date: today,
+      title: `Day ${dayNumber}: ${day.title}`,
+      choiceDescription,
+      outcomeText: isCorrect ? day.correctOutcome.herdReaction : `Lesson learned: ${feedback}`,
+      traitsBoosted: [traitKey || 'carefulness']
+    };
+
+    const nextCompletedDays = Array.from(new Set([...(livingState.completedDayNumbers || []), dayNumber]));
+    const nextDayNumber = Math.min(7, dayNumber + 1);
+
+    const newLivingState = {
+      ...livingState,
+      lastCheckDate: today,
+      currentDayNumber: nextDayNumber,
+      completedDayNumbers: nextCompletedDays,
+      herdMemory: updatedHerdMemory,
+      memoryTraits: updatedTraits,
+      todayNeedCompleted: true,
+      currentMoodId: isCorrect ? 'proud' : 'cozy',
+      cosmeticTokens: (livingState.cosmeticTokens || 0) + earnedTokens,
+      masteryStars: (livingState.masteryStars || 0) + earnedStars,
+      herdStoryLog: [storyEntry, ...(livingState.herdStoryLog || [])].slice(0, 30)
+    };
+
+    LivingHerdEngine.saveLivingHerdState(learnerId, newLivingState);
+
+    // 5. Update questState (condition & bond)
+    const updatedQuestState = { ...questState };
+    updatedQuestState.conditionScore = Math.max(35, Math.min(100, (updatedQuestState.conditionScore || 85) + conditionDelta));
+    if (updatedQuestState.herdBond) {
+      updatedQuestState.herdBond = {
+        ...updatedQuestState.herdBond,
+        xp: (updatedQuestState.herdBond.xp || 0) + bondDelta
+      };
+      const newLevel = Math.min(10, Math.floor(updatedQuestState.herdBond.xp / 100) + 1);
+      if (newLevel > (updatedQuestState.herdBond.level || 1)) {
+        updatedQuestState.herdBond.level = newLevel;
+      }
+    }
+
+    return {
+      dayNumber,
+      dayTitle: day.title,
+      isCorrect,
+      feedback,
+      herdReaction: isCorrect ? day.correctOutcome.herdReaction : `Barnaby paused and waited while you adjusted care. ${feedback}`,
+      tomorrowTease: day.correctOutcome.tomorrowTease,
+      rewards: day.correctOutcome.rewards,
+      practiceRibbon,
+      stationScores,
+      earnedStars,
+      earnedTokens,
+      earnedBondXp: bondDelta,
+      earnedCondition: conditionDelta,
+      herdMemory: updatedHerdMemory,
+      updatedLivingState: newLivingState,
+      updatedQuestState,
+      storyEntry
     };
   }
 
