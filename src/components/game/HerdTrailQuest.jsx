@@ -1,12 +1,13 @@
 // WarrenWise Youth Animal Training Academy - Signature Game Mode
 // HERD TRAIL QUEST: Oregon Trail-Style Learning Journey & Fortnite-Style Cosmetic Collection
-// Multi-Species (12 Overworld Trails), Upgraded Equipment & Pet Rewards, Safe Care Boundaries
+// Living Herd System: Morning Barn Check, Living Trail Map, Double Reward Victory, Family Barn Board, Herd Story Log
 
 import React, { useState, useEffect } from 'react';
 import { 
   Compass, Map, Sparkles, Home, Award, Heart, 
   MapPin, Shield, RotateCcw, AlertTriangle, ChevronRight, Bot,
-  Gift, Flame, Eye, Volume2, CheckCircle2, Lock, Coins, Trophy, ShoppingBag
+  Gift, Flame, Eye, Volume2, CheckCircle2, Lock, Coins, Trophy, ShoppingBag,
+  Users, BookOpen, Sun
 } from 'lucide-react';
 import PartyConditionCard from './PartyConditionCard';
 import TrailMapView from './TrailMapView';
@@ -19,8 +20,16 @@ import VisualWagonTrailViewport from './VisualWagonTrailViewport';
 import TrailOutfitterStore from './TrailOutfitterStore';
 import ChampionshipShowRing from './ChampionshipShowRing';
 import TrailHazardModal from './TrailHazardModal';
+import MorningBarnCheck from './livingHerd/MorningBarnCheck';
+import LivingTrailMap from './livingHerd/LivingTrailMap';
+import DoubleRewardVictory from './livingHerd/DoubleRewardVictory';
+import FamilyBarnBoard from './livingHerd/FamilyBarnBoard';
+import HerdStoryLog from './livingHerd/HerdStoryLog';
+
 import { TRAIL_PACKS, getTrailPackById, getAvailableTrailPacks } from '../../data/game/trailPacks';
 import { TrailQuestEngine } from '../../services/TrailQuestEngine';
+import { LivingHerdEngine } from '../../services/LivingHerdEngine';
+import { soundEffects } from '../../utils/audioEffects';
 
 export default function HerdTrailQuest({
   learner = { id: 'learner_current', handle: 'CloverChampion42', division: 'junior' },
@@ -30,12 +39,16 @@ export default function HerdTrailQuest({
   onCompleteQuiz
 }) {
   const [questState, setQuestState] = useState(() => TrailQuestEngine.loadState(learner.id));
-  const [activeTab, setActiveTab] = useState('trail'); // 'trail' | 'overworld' | 'outfitter' | 'showring' | 'locker' | 'habitat'
+  const [dailyStatus, setDailyStatus] = useState(() => LivingHerdEngine.getDailyStatus(learner.id, questState));
+  
+  // Game starts on Morning Barn Check (Living Herd First!)
+  const [activeTab, setActiveTab] = useState('morning'); // 'morning' | 'trail' | 'outfitter' | 'showring' | 'family' | 'story' | 'overworld' | 'locker' | 'habitat'
   const [activeNode, setActiveNode] = useState(null);
   const [activeHazard, setActiveHazard] = useState(null);
   const [isCoachSignalModalOpen, setIsCoachSignalModalOpen] = useState(false);
   const [celebrationCosmetic, setCelebrationCosmetic] = useState(null);
   const [streakModalData, setStreakModalData] = useState(null);
+  const [victoryModalData, setVictoryModalData] = useState(null);
 
   // Accessibility Toggles
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -45,9 +58,40 @@ export default function HerdTrailQuest({
   useEffect(() => {
     const loaded = TrailQuestEngine.loadState(learner.id);
     setQuestState(loaded);
+    setDailyStatus(LivingHerdEngine.getDailyStatus(learner.id, loaded));
   }, [learner.id]);
 
   const currentTrailPack = getTrailPackById(questState.activeTrailPackId);
+
+  // Resolve Morning Barn Check Daily Need
+  const handleResolveMorningNeed = (needId, optionId) => {
+    const result = LivingHerdEngine.resolveDailyNeed({
+      learnerId: learner.id,
+      questState,
+      needId,
+      optionId
+    });
+
+    setQuestState(result.updatedQuestState);
+    TrailQuestEngine.saveState(learner.id, result.updatedQuestState);
+    setDailyStatus(LivingHerdEngine.getDailyStatus(learner.id, result.updatedQuestState));
+
+    if (result.isCorrect) {
+      setVictoryModalData({
+        earnedPoints: 50,
+        earnedBondXp: result.earnedBondXp,
+        earnedStars: result.earnedStars,
+        earnedTokens: result.earnedTokens,
+        isLevelUp: false,
+        newBondLevel: result.updatedQuestState.herdBond?.level || 1,
+        badgeEarned: 'Morning Barn Steward',
+        cosmeticUnlock: 'Sunburst Bandana & Hay Feeder',
+        tomorrowTeaser: result.tomorrowTease
+      });
+    }
+
+    return result;
+  };
 
   // Challenge Completion Handler
   const handleCompleteNode = ({
@@ -58,6 +102,8 @@ export default function HerdTrailQuest({
     suppliesDelta,
     bondXpDelta
   }) => {
+    const prevBondLevel = questState.herdBond?.level || 1;
+
     const { 
       updatedState, 
       newlyUnlockedCosmetics, 
@@ -82,6 +128,20 @@ export default function HerdTrailQuest({
     // If answer was incorrect, trigger the dramatic frontier calamity!
     if (triggeredHazard) {
       setActiveHazard(triggeredHazard);
+    } else if (isCorrect) {
+      // Trigger Mockup 2 High-Energy Double Reward Celebration!
+      const newBondLevel = updatedState.herdBond?.level || 1;
+      setVictoryModalData({
+        earnedPoints,
+        earnedBondXp: 25,
+        earnedStars: 1,
+        earnedTokens: 5,
+        isLevelUp: newBondLevel > prevBondLevel,
+        newBondLevel,
+        badgeEarned: 'Quiz Champion',
+        cosmeticUnlock: newlyUnlockedCosmetics[0]?.name || 'Trail Scarf & Habitat Decoration',
+        tomorrowTeaser: 'Tomorrow: High Divide Weather & Oral Defense Practice!'
+      });
     }
 
     // Sync to Academy Mastery Engine & 4-H Badges
@@ -97,7 +157,7 @@ export default function HerdTrailQuest({
       }
     }
 
-    if (newlyUnlockedCosmetics.length > 0) {
+    if (newlyUnlockedCosmetics.length > 0 && !isCorrect) {
       setCelebrationCosmetic(newlyUnlockedCosmetics[0]);
     }
   };
@@ -116,7 +176,6 @@ export default function HerdTrailQuest({
   };
 
   const handleSaveAward = (awardRecord) => {
-    // Award record already saved in evaluateShowRing inside engine
     const refreshed = TrailQuestEngine.loadState(learner.id);
     setQuestState(refreshed);
   };
@@ -146,6 +205,7 @@ export default function HerdTrailQuest({
   };
 
   const handleClaimDailyStreak = () => {
+    soundEffects.playChestPop();
     const result = TrailQuestEngine.claimDailyStreak(questState);
     setQuestState(result.updatedState);
     TrailQuestEngine.saveState(learner.id, result.updatedState);
@@ -157,7 +217,7 @@ export default function HerdTrailQuest({
   return (
     <div className={`max-w-7xl mx-auto space-y-6 ${highContrast ? 'contrast-125' : ''} ${reducedMotion ? 'motion-reduce' : ''}`}>
       
-      {/* Top Accessibility & Streak Ribbon */}
+      {/* Top Accessibility & Streak Magnet Ribbon */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 bg-slate-900 text-white rounded-2xl text-xs">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 font-bold text-amber-400">
@@ -167,7 +227,7 @@ export default function HerdTrailQuest({
 
           <button
             onClick={handleClaimDailyStreak}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] transition shadow-xs"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] transition shadow-xs cursor-pointer"
           >
             <Gift className="w-3.5 h-3.5" />
             <span>Open Daily Care Chest</span>
@@ -200,26 +260,42 @@ export default function HerdTrailQuest({
         </div>
       </div>
 
-      {/* Game Mode Navigation Ribbon */}
+      {/* Game Navigation Ribbon (Living Herd Navigation) */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2.5 rounded-3xl border border-slate-200 shadow-2xs">
         
         {/* Tab Buttons */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          
+          {/* 1. Morning Barn Check (Living Herd Default) */}
           <button
-            onClick={() => setActiveTab('trail')}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
+            onClick={() => { soundEffects.playTap(); setActiveTab('morning'); }}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-black flex items-center gap-1.5 transition ${
+              activeTab === 'morning'
+                ? 'bg-amber-500 text-slate-950 shadow-xs ring-2 ring-amber-400/40'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <span>🌅</span>
+            <span>Morning Barn Check</span>
+          </button>
+
+          {/* 2. Living Trail Map */}
+          <button
+            onClick={() => { soundEffects.playTap(); setActiveTab('trail'); }}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition ${
               activeTab === 'trail'
                 ? 'bg-emerald-700 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Map className="w-4 h-4" />
-            <span>Trail Map &amp; Caravan</span>
+            <span>Trail Caravan</span>
           </button>
 
+          {/* 3. Trading Post */}
           <button
-            onClick={() => setActiveTab('outfitter')}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
+            onClick={() => { soundEffects.playTap(); setActiveTab('outfitter'); }}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition ${
               activeTab === 'outfitter'
                 ? 'bg-amber-600 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -227,14 +303,15 @@ export default function HerdTrailQuest({
           >
             <ShoppingBag className="w-4 h-4" />
             <span>Trading Post</span>
-            <span className="bg-amber-100 text-amber-900 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold">
+            <span className="bg-amber-100 text-amber-900 text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold">
               {(questState.trailPoints || 0)} Pts
             </span>
           </button>
 
+          {/* 4. Grand Show Ring */}
           <button
-            onClick={() => setActiveTab('showring')}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
+            onClick={() => { soundEffects.playTap(); setActiveTab('showring'); }}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition ${
               activeTab === 'showring'
                 ? 'bg-purple-700 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -244,40 +321,69 @@ export default function HerdTrailQuest({
             <span>Grand Show Ring</span>
           </button>
 
+          {/* 5. Family Barn Board */}
           <button
-            onClick={() => setActiveTab('overworld')}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
+            onClick={() => { soundEffects.playTap(); setActiveTab('family'); }}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition ${
+              activeTab === 'family'
+                ? 'bg-sky-600 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Family Board</span>
+          </button>
+
+          {/* 6. Herd Story Log */}
+          <button
+            onClick={() => { soundEffects.playTap(); setActiveTab('story'); }}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition ${
+              activeTab === 'story'
+                ? 'bg-indigo-700 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Story Log</span>
+          </button>
+
+          {/* 7. Overworld */}
+          <button
+            onClick={() => { soundEffects.playTap(); setActiveTab('overworld'); }}
+            className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition ${
               activeTab === 'overworld'
                 ? 'bg-teal-700 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Compass className="w-4 h-4" />
-            <span>12-Region Overworld</span>
+            <span>12 Regions</span>
           </button>
 
+          {/* 8. Gear Locker */}
           <button
-            onClick={() => setActiveTab('locker')}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
+            onClick={() => { soundEffects.playTap(); setActiveTab('locker'); }}
+            className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition ${
               activeTab === 'locker'
                 ? 'bg-indigo-700 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Sparkles className="w-4 h-4" />
-            <span>Gear &amp; Pets</span>
+            <span>Locker</span>
           </button>
 
+          {/* 9. Campsite */}
           <button
-            onClick={() => setActiveTab('habitat')}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition ${
+            onClick={() => { soundEffects.playTap(); setActiveTab('habitat'); }}
+            className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition ${
               activeTab === 'habitat'
                 ? 'bg-stone-800 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Home className="w-4 h-4" />
-            <span>Campsite Habitat</span>
+            <span>Campsite</span>
           </button>
         </div>
 
@@ -289,7 +395,7 @@ export default function HerdTrailQuest({
               className="flex items-center gap-1.5 bg-purple-100 hover:bg-purple-200 text-purple-900 px-3.5 py-1.5 rounded-xl text-xs font-bold transition border border-purple-300"
             >
               <MapPin className="w-3.5 h-3.5 text-purple-700" />
-              <span>Plant Coach Beacon</span>
+              <span>Plant Beacon</span>
             </button>
           )}
 
@@ -303,10 +409,36 @@ export default function HerdTrailQuest({
         </div>
       </div>
 
-      {/* Main Tab Views */}
+      {/* Screen 1: Morning Barn Check (Mockup 1 Left Pane) */}
+      {activeTab === 'morning' && (
+        <div className="space-y-6">
+          <MorningBarnCheck
+            dailyStatus={dailyStatus}
+            questState={questState}
+            trailPack={currentTrailPack}
+            onResolveNeed={handleResolveMorningNeed}
+            onOpenTrailRun={() => setActiveTab('trail')}
+            onOpenAiTrainer={onOpenAiTrainer}
+          />
+        </div>
+      )}
+
+      {/* Screen 2: Living Trail Map & Visual Caravan (Mockup 1 Right Pane) */}
       {activeTab === 'trail' && (
         <div className="space-y-6">
-          {/* Animated Pioneer Wagon Trail Visual Viewport */}
+          {/* Oregon Trail Adventure Overworld Viewport */}
+          <LivingTrailMap
+            questState={questState}
+            trailPack={currentTrailPack}
+            dailyStatus={dailyStatus}
+            onSelectNode={(node) => setActiveNode(node)}
+            onOpenMorningCheck={() => setActiveTab('morning')}
+            onOpenShowRing={() => setActiveTab('showring')}
+            onOpenFamilyBoard={() => setActiveTab('family')}
+            onOpenOutfitter={() => setActiveTab('outfitter')}
+          />
+
+          {/* Animated Wagon Trail Visual Viewport */}
           <VisualWagonTrailViewport
             questState={questState}
             trailPack={currentTrailPack}
@@ -324,7 +456,7 @@ export default function HerdTrailQuest({
             onOpenHabitat={() => setActiveTab('habitat')}
           />
 
-          {/* Panoramic Trail Map */}
+          {/* Detailed Topographic Trail Map */}
           <TrailMapView
             trailPack={currentTrailPack}
             questState={questState}
@@ -333,6 +465,7 @@ export default function HerdTrailQuest({
         </div>
       )}
 
+      {/* Screen 3: Trading Post */}
       {activeTab === 'outfitter' && (
         <TrailOutfitterStore
           questState={questState}
@@ -341,6 +474,7 @@ export default function HerdTrailQuest({
         />
       )}
 
+      {/* Screen 4: Championship Show Ring */}
       {activeTab === 'showring' && (
         <ChampionshipShowRing
           questState={questState}
@@ -350,6 +484,25 @@ export default function HerdTrailQuest({
         />
       )}
 
+      {/* Screen 5: Family Barn Board */}
+      {activeTab === 'family' && (
+        <FamilyBarnBoard
+          learner={learner}
+          userRole={userRole}
+          trailPack={currentTrailPack}
+        />
+      )}
+
+      {/* Screen 6: Herd Story Log */}
+      {activeTab === 'story' && (
+        <HerdStoryLog
+          dailyStatus={dailyStatus}
+          questState={questState}
+          trailPack={currentTrailPack}
+        />
+      )}
+
+      {/* Screen 7: 12-Region Overworld */}
       {activeTab === 'overworld' && (
         <OverworldMapView
           questState={questState}
@@ -357,6 +510,7 @@ export default function HerdTrailQuest({
         />
       )}
 
+      {/* Screen 8: Gear & Cosmetics Locker */}
       {activeTab === 'locker' && (
         <CosmeticsLocker
           questState={questState}
@@ -364,6 +518,7 @@ export default function HerdTrailQuest({
         />
       )}
 
+      {/* Screen 9: Campsite Habitat */}
       {activeTab === 'habitat' && (
         <HabitatShowcase
           trailPack={currentTrailPack}
@@ -371,7 +526,7 @@ export default function HerdTrailQuest({
         />
       )}
 
-      {/* Interactive Challenge Modal */}
+      {/* Challenge Arena Modal */}
       {activeNode && (
         <ChallengeModal
           node={activeNode}
@@ -380,6 +535,31 @@ export default function HerdTrailQuest({
           onComplete={handleCompleteNode}
           onClose={() => setActiveNode(null)}
           onOpenAiTrainer={onOpenAiTrainer}
+        />
+      )}
+
+      {/* Double Reward Victory Celebration Modal (Mockup 2) */}
+      {victoryModalData && (
+        <DoubleRewardVictory
+          resultData={victoryModalData}
+          trailPack={currentTrailPack}
+          questState={questState}
+          onKeepGoing={() => {
+            soundEffects.playTap();
+            setVictoryModalData(null);
+            setActiveTab('trail');
+            // Select next unlocked node
+            const nodes = currentTrailPack?.nodes || [];
+            const nextNode = nodes.find(n => !questState.completedNodeIds.includes(n.id));
+            if (nextNode) {
+              setActiveNode(nextNode);
+            }
+          }}
+          onSaveAndRest={() => {
+            soundEffects.playTap();
+            setVictoryModalData(null);
+            setActiveTab('morning');
+          }}
         />
       )}
 
@@ -409,7 +589,7 @@ export default function HerdTrailQuest({
             </div>
             <button
               onClick={() => setStreakModalData(null)}
-              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-xs"
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
             >
               Continue Trail Adventure
             </button>
@@ -417,7 +597,7 @@ export default function HerdTrailQuest({
         </div>
       )}
 
-      {/* Celebration Modal for Unlocked Cosmetic (Skin, Pet, or Upgraded Equipment) */}
+      {/* Celebration Modal for Unlocked Cosmetic */}
       {celebrationCosmetic && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl text-center space-y-4">
@@ -436,7 +616,7 @@ export default function HerdTrailQuest({
             </div>
             <button
               onClick={() => setCelebrationCosmetic(null)}
-              className="w-full py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition shadow-xs"
+              className="w-full py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
             >
               Awesome! Add to Locker
             </button>

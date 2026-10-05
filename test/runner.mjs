@@ -39,6 +39,13 @@ import {
   ANTI_PAY_TO_WIN_POLICY 
 } from '../src/config/subscriptionPlans.js';
 import { EntitlementService } from '../src/services/EntitlementService.js';
+import { 
+  LivingHerdEngine, 
+  LIVING_HERD_NEEDS, 
+  HERD_MOODS, 
+  FAIR_SEASON_ARCS,
+  WEEKLY_MAGNET_EVENTS 
+} from '../src/services/LivingHerdEngine.js';
 
 console.log('🧪 Starting WarrenWise Youth Animal Training Academy Test Suite...\n');
 
@@ -1096,6 +1103,123 @@ test('Promo codes and Admin Support Overrides function accurately', () => {
     adminKey: '0000'
   });
   assert.strictEqual(badKeyRes.success, false);
+});
+
+// --- 13. Living Herd System & Daily Trail Adventure Tests ---
+console.log('\n--- 13. Living Herd System & Daily Trail Adventure Tests ---');
+
+test('Living Herd Clock provides daily care need rotation and mood evaluation', () => {
+  const learnerId = 'test_living_learner_1';
+  const questState = { conditionScore: 88, currentMile: 30, herdBond: { level: 2, xp: 120 } };
+
+  const status = LivingHerdEngine.getDailyStatus(learnerId, questState);
+  assert.ok(status.todayNeed, 'Daily status should include rotating care need');
+  assert.ok(status.todayNeed.title, 'Care need must have a title');
+  assert.ok(status.todayNeed.options.length >= 2, 'Care need must have multiple options');
+  assert.ok(status.currentMood, 'Status should evaluate current mood');
+
+  // Verify non-prescriptive rule across all daily care needs
+  LIVING_HERD_NEEDS.forEach(need => {
+    assert.ok(need.safeAdvice, `Need ${need.id} must have safe advice`);
+    const correctOpts = need.options.filter(o => o.isCorrect);
+    assert.strictEqual(correctOpts.length, 1, `Need ${need.id} must have exactly one correct option`);
+    
+    // Ensure no options recommend unauthorized medical dosing
+    correctOpts.forEach(opt => {
+      assert.doesNotMatch(opt.text, /pill|antibiotic|medication|dosing|bleach/i, 'Correct options cannot recommend unprescribed medications or toxic additives');
+    });
+  });
+});
+
+test('Warm Re-Entry welcomes returning youth without punitive zeroing or animal loss', () => {
+  const learnerId = 'test_warm_reentry_learner';
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  // Seed state with last check 3 days ago and low condition
+  LivingHerdEngine.saveLivingHerdState(learnerId, {
+    lastCheckDate: threeDaysAgo,
+    consecutiveDays: 4,
+    currentMoodId: 'cozy',
+    memoryTraits: { consistency: 60, carefulness: 70, ethics: 80, showReadiness: 65 }
+  });
+
+  const testQuestState = { conditionScore: 40, currentMile: 20 };
+  const status = LivingHerdEngine.getDailyStatus(learnerId, testQuestState);
+
+  assert.strictEqual(status.isWarmReentry, true, 'Should detect warm re-entry after missed days');
+  assert.ok(status.welcomeMessage.includes('Welcome back!'), 'Welcome message must be encouraging and low-pressure');
+  assert.ok(testQuestState.conditionScore >= 65, 'Warm re-entry must protect condition floor (>= 65) without harsh penalty');
+});
+
+test('Dual Reward Spine awards both learning progress and world cosmetic tokens', () => {
+  const learnerId = 'test_dual_spine_learner';
+  const questState = { 
+    conditionScore: 75, 
+    currentMile: 25, 
+    herdBond: { level: 1, xp: 80 } 
+  };
+
+  const status = LivingHerdEngine.getDailyStatus(learnerId, questState);
+  const need = status.todayNeed;
+  const correctOption = need.options.find(o => o.isCorrect);
+
+  const resolveRes = LivingHerdEngine.resolveDailyNeed({
+    learnerId,
+    questState,
+    needId: need.id,
+    optionId: correctOption.id
+  });
+
+  assert.strictEqual(resolveRes.isCorrect, true);
+  // Learning progress
+  assert.ok(resolveRes.earnedStars >= 1, 'Awards learning mastery stars');
+  // World progress
+  assert.ok(resolveRes.earnedTokens >= 1, 'Awards cosmetic tokens for visual flair');
+  assert.ok(resolveRes.earnedBondXp >= 15, 'Awards herd bond XP');
+  // Memory trait and story log persistence
+  assert.ok(resolveRes.storyEntry, 'Generates chronicle story log entry');
+  assert.ok(resolveRes.storyEntry.outcomeText, 'Story log explains impact of stewardship choice');
+  assert.ok(resolveRes.updatedLivingState.herdStoryLog.length > 0, 'Persists narrative log in living herd state');
+});
+
+test('Safe Family Barn Board enables private family/coach sharing without stranger chat', () => {
+  const learnerId = 'test_barn_board_learner';
+  
+  // Post as youth
+  const postsAfterYouth = LivingHerdEngine.addFamilyBarnPost(learnerId, {
+    authorName: 'CloverChampion42',
+    role: 'youth',
+    text: 'Completed Morning Barn Check and brushed coat before inspection!',
+    photoEmoji: '🐇',
+    badge: 'Daily Win'
+  });
+  assert.ok(postsAfterYouth.length >= 1);
+  assert.strictEqual(postsAfterYouth[0].role, 'youth');
+
+  // Post cheer as parent
+  const postsAfterParent = LivingHerdEngine.addFamilyBarnPost(learnerId, {
+    authorName: 'Mom & Dad',
+    role: 'parent',
+    text: 'Great focus on gentle handling today! 🌟',
+    photoEmoji: '💖',
+    badge: 'Parent Cheer'
+  });
+  assert.strictEqual(postsAfterParent[0].role, 'parent');
+
+  // React / Cheer post
+  const postId = postsAfterYouth[0].id;
+  const postsAfterCheer = LivingHerdEngine.cheerPost(learnerId, postId);
+  const cheered = postsAfterCheer.find(p => p.id === postId);
+  assert.ok(cheered.cheers >= 2, 'Cheer reaction should increment cleanly');
+});
+
+test('Fair Season Arc and Weekly Magnet Events are configured comprehensively', () => {
+  assert.strictEqual(FAIR_SEASON_ARCS.length, 4, 'Must define 4 chaptered fair season arcs');
+  assert.ok(FAIR_SEASON_ARCS.some(a => a.id === 'fair_week'), 'Must include County Fair Sim chapter');
+  
+  assert.ok(WEEKLY_MAGNET_EVENTS.length >= 4, 'Must define weekly magnet events');
+  assert.ok(WEEKLY_MAGNET_EVENTS.some(e => e.id === 'storm_weekend'), 'Must support Storm Weekend hazard event');
+  assert.ok(WEEKLY_MAGNET_EVENTS.some(e => e.id === 'showring_saturday'), 'Must support Show-Ring Saturday clinic');
 });
 
 // Summary
