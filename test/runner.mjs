@@ -25,7 +25,7 @@ import { CONTENT_STATUSES, LEGAL_DISCLAIMERS, ACCURACY_POLICY_STATEMENT } from '
 import { TRAIL_PACKS, getTrailPackById } from '../src/data/game/trailPacks.js';
 import { validateCareOption } from '../src/data/game/careRuleset.js';
 import { ALL_COSMETICS } from '../src/data/game/cosmeticsCatalog.js';
-import { TrailQuestEngine } from '../src/services/TrailQuestEngine.js';
+import { TrailQuestEngine, TRAIL_OUTFITTER_CATALOG, WAGON_AILMENTS } from '../src/services/TrailQuestEngine.js';
 import { ParentalControlsService, getSafeDefaultsByDivision } from '../src/services/ParentalControlsService.js';
 import { SEED_LEARNERS } from '../src/db/seedData.js';
 import { 
@@ -1382,6 +1382,199 @@ test('Herd Memory tracks all 5 core stewardship traits persistently', () => {
   assert.ok(typeof memory.heatSafety === 'number');
   assert.ok(typeof memory.handling === 'number');
   assert.ok(typeof memory.biosecurity === 'number');
+});
+
+// ----------------------------------------------------
+// 15. WAGON & CAMP ECONOMY & POINT SINK TESTS
+// ----------------------------------------------------
+console.log('\n--- 15. Wagon & Camp Economy & Point Sink Tests ---');
+
+test('Wagon repair and camp betterment items are properly registered in TRAIL_OUTFITTER_CATALOG', () => {
+  const wagonRepairs = TRAIL_OUTFITTER_CATALOG.filter(i => i.category === 'wagon_repair');
+  const campBetterments = TRAIL_OUTFITTER_CATALOG.filter(i => i.category === 'camp_betterment');
+
+  assert.ok(wagonRepairs.length >= 4, 'Must include at least 4 authentic pioneer wagon repair items');
+  assert.ok(campBetterments.length >= 5, 'Must include at least 5 camp betterment and restock items');
+
+  wagonRepairs.forEach(item => {
+    assert.ok(item.cost > 0, `Item ${item.id} must have a positive point cost`);
+    assert.ok(item.name, `Item ${item.id} must have a name`);
+    assert.ok(item.description, `Item ${item.id} must describe repair benefits`);
+    assert.ok(item.effect, `Item ${item.id} must have mechanical or condition effects`);
+  });
+
+  campBetterments.forEach(item => {
+    assert.ok(item.cost > 0, `Item ${item.id} must have a positive point cost`);
+    assert.ok(item.name, `Item ${item.id} must have a name`);
+    assert.ok(item.description, `Item ${item.id} must describe betterment benefits`);
+  });
+});
+
+test('Natural overland trail travel degrades wagon durability and camp comfort over time', () => {
+  const baseState = {
+    ...TrailQuestEngine.loadState('test_wear_learner'),
+    currentMile: 10,
+    wagonStatus: { durability: 85, canvasCover: 80, carrierCushion: 75, activeAilment: null },
+    campStatus: { comfortLevel: 80, hydrationPurity: 85, forageFreshness: 80 }
+  };
+
+  const { updatedState } = TrailQuestEngine.completeNode({
+    state: baseState,
+    nodeId: 'rb_test_node',
+    mile: 20,
+    isCorrect: true,
+    division: 'junior'
+  });
+
+  assert.ok(updatedState.wagonStatus.durability < 85, 'Wagon durability must decrease from trail friction');
+  assert.ok(updatedState.wagonStatus.canvasCover < 80, 'Wagon canvas cover must experience trail wear');
+  assert.ok(updatedState.wagonStatus.carrierCushion < 75, 'Carrier cushion must experience trail vibration');
+  assert.ok(updatedState.campStatus.comfortLevel < 80, 'Camp comfort must decay as miles accumulate');
+});
+
+test('Spending Trail Points repairs wagon durability, canvas, and carrier cushion', () => {
+  const state = {
+    ...TrailQuestEngine.loadState('test_repair_learner'),
+    trailPoints: 300,
+    wagonStatus: { durability: 60, canvasCover: 50, carrierCushion: 55, activeAilment: null }
+  };
+
+  // Buy Axle Grease (costs 60 pts, +25% Durability)
+  const result1 = TrailQuestEngine.repairWagon(state, 'repair_axle_grease');
+  assert.strictEqual(result1.updatedState.trailPoints, 240, 'Points must be deducted accurately (300 - 60 = 240)');
+  assert.strictEqual(result1.updatedState.wagonStatus.durability, 85, 'Wagon durability must increase by 25%');
+
+  // Buy Canvas Patch (costs 75 pts, +30% Canvas Cover)
+  const result2 = TrailQuestEngine.repairWagon(result1.updatedState, 'repair_canvas_patch');
+  assert.strictEqual(result2.updatedState.trailPoints, 165, 'Points must be deducted accurately (240 - 75 = 165)');
+  assert.strictEqual(result2.updatedState.wagonStatus.canvasCover, 80, 'Canvas cover must increase by 30%');
+
+  // Buy Suspension Felt (costs 80 pts, +25% Carrier Cushion)
+  const result3 = TrailQuestEngine.repairWagon(result2.updatedState, 'repair_suspension_felt');
+  assert.strictEqual(result3.updatedState.trailPoints, 85, 'Points must be deducted accurately (165 - 80 = 85)');
+  assert.strictEqual(result3.updatedState.wagonStatus.carrierCushion, 80, 'Carrier cushion must increase by 25%');
+});
+
+test('Purchasing camp betterments restocks feed, water, and bedding supplies, and raises comfort', () => {
+  const state = {
+    ...TrailQuestEngine.loadState('test_camp_learner'),
+    trailPoints: 250,
+    supplies: { feed: 20, water: 25, bedding: 15, grooming: 60 },
+    campStatus: { comfortLevel: 45, hydrationPurity: 50, forageFreshness: 50 }
+  };
+
+  // Buy Mountain Pine & Cedar Flakes (costs 70 pts, +35 Bedding, +20 Camp Comfort)
+  const r1 = TrailQuestEngine.betterCamp(state, 'camp_cedar_bedding');
+  assert.strictEqual(r1.updatedState.trailPoints, 180);
+  assert.strictEqual(r1.updatedState.supplies.bedding, 50);
+  assert.strictEqual(r1.updatedState.campStatus.comfortLevel, 65);
+
+  // Buy Charcoal Water Filter (costs 85 pts, +40 Water)
+  const r2 = TrailQuestEngine.betterCamp(r1.updatedState, 'camp_charcoal_filter');
+  assert.strictEqual(r2.updatedState.trailPoints, 95);
+  assert.strictEqual(r2.updatedState.supplies.water, 65);
+});
+
+test('Wagon ailments (e.g. Squeaking Axle, Torn Canvas) are fully cured by matching repair items', () => {
+  const squeakingAxle = WAGON_AILMENTS.squeaking_axle;
+  assert.ok(squeakingAxle, 'Must define squeaking axle ailment');
+
+  const afflictedState = {
+    ...TrailQuestEngine.loadState('test_ailment_learner'),
+    trailPoints: 200,
+    wagonStatus: {
+      durability: 45,
+      canvasCover: 70,
+      carrierCushion: 65,
+      activeAilment: squeakingAxle
+    }
+  };
+
+  assert.strictEqual(afflictedState.wagonStatus.activeAilment.id, 'squeaking_axle');
+
+  // Cure with Pine Pitch Axle Grease
+  const cured = TrailQuestEngine.buyOutfitterItem(afflictedState, 'repair_axle_grease');
+  assert.strictEqual(cured.updatedState.wagonStatus.activeAilment, null, 'Active ailment must be cleared after applying remedy');
+  assert.strictEqual(cured.updatedState.trailPoints, 140);
+  assert.strictEqual(cured.updatedState.wagonStatus.durability, 70);
+
+  // Test cureActiveAilment helper with Torn Canvas
+  const tornState = {
+    ...TrailQuestEngine.loadState('test_torn_learner'),
+    trailPoints: 150,
+    wagonStatus: {
+      durability: 60,
+      canvasCover: 35,
+      carrierCushion: 65,
+      activeAilment: WAGON_AILMENTS.torn_canvas
+    }
+  };
+
+  const autoCured = TrailQuestEngine.cureActiveAilment(tornState);
+  assert.strictEqual(autoCured.cured, true);
+  assert.strictEqual(autoCured.updatedState.wagonStatus.activeAilment, null);
+  assert.strictEqual(autoCured.updatedState.trailPoints, 75);
+});
+
+test('Full Wagon Overhaul and Grand Camp Restock restore metrics to 100% and clear ailments', () => {
+  const damagedState = {
+    ...TrailQuestEngine.loadState('test_overhaul_learner'),
+    trailPoints: 500,
+    wagonStatus: {
+      durability: 30,
+      canvasCover: 25,
+      carrierCushion: 20,
+      activeAilment: WAGON_AILMENTS.jarred_springs
+    },
+    campStatus: { comfortLevel: 25, hydrationPurity: 30, forageFreshness: 30 },
+    supplies: { feed: 10, water: 15, bedding: 10, grooming: 50 }
+  };
+
+  // Full Wagon Overhaul (costs 160 pts)
+  const overhaul = TrailQuestEngine.repairWagon(damagedState, 'repair_wagon_overhaul');
+  assert.strictEqual(overhaul.updatedState.wagonStatus.durability, 100);
+  assert.strictEqual(overhaul.updatedState.wagonStatus.canvasCover, 100);
+  assert.strictEqual(overhaul.updatedState.wagonStatus.carrierCushion, 100);
+  assert.strictEqual(overhaul.updatedState.wagonStatus.activeAilment, null, 'Overhaul clears all ailments');
+  assert.strictEqual(overhaul.updatedState.trailPoints, 340);
+
+  // Grand Camp Restock (costs 180 pts)
+  const campRestock = TrailQuestEngine.betterCamp(overhaul.updatedState, 'camp_grand_deluxe_betterment');
+  assert.strictEqual(campRestock.updatedState.campStatus.comfortLevel, 100);
+  assert.strictEqual(campRestock.updatedState.supplies.feed, 100);
+  assert.strictEqual(campRestock.updatedState.supplies.water, 100);
+  assert.strictEqual(campRestock.updatedState.supplies.bedding, 100);
+  assert.strictEqual(campRestock.updatedState.trailPoints, 160);
+});
+
+test('Repeatable point sink purchases prevent hoarding by allowing continuous point expenditure', () => {
+  const learnerId = 'test_repeatable_learner';
+  let state = {
+    ...TrailQuestEngine.loadState(learnerId),
+    trailPoints: 400,
+    wagonStatus: { durability: 50, canvasCover: 50, carrierCushion: 50, activeAilment: null }
+  };
+
+  // Buy axle grease once
+  state = TrailQuestEngine.buyOutfitterItem(state, 'repair_axle_grease').updatedState;
+  assert.strictEqual(state.trailPoints, 340);
+  assert.strictEqual(state.wagonStatus.durability, 75);
+
+  // Buy axle grease again (repeatable purchase - must not throw "already possess" error)
+  state = TrailQuestEngine.buyOutfitterItem(state, 'repair_axle_grease').updatedState;
+  assert.strictEqual(state.trailPoints, 280);
+  assert.strictEqual(state.wagonStatus.durability, 100);
+});
+
+test('Insufficient Trail Points blocks repair attempt with informative error message', () => {
+  const brokeState = {
+    ...TrailQuestEngine.loadState('test_broke_learner'),
+    trailPoints: 20
+  };
+
+  assert.throws(() => {
+    TrailQuestEngine.repairWagon(brokeState, 'repair_axle_grease');
+  }, /Insufficient Trail Points/);
 });
 
 // Summary

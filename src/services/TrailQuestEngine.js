@@ -56,7 +56,152 @@ export const TRAIL_DIFFICULTY_TIERS = {
   }
 };
 
+export const WAGON_AILMENTS = {
+  squeaking_axle: {
+    id: 'squeaking_axle',
+    name: 'Squeaking Dry Axle & Mud Clog',
+    emoji: '⚙️',
+    description: 'Dry wooden hubs and gritty road clay make an ear-splitting grinding noise that rattles and stresses your animal.',
+    cureItemId: 'repair_axle_grease',
+    penaltyText: '-10% Calm Temperament & slower wagon pace'
+  },
+  torn_canvas: {
+    id: 'torn_canvas',
+    name: 'Torn Drafty Wagon Canvas',
+    emoji: '⛺',
+    description: 'Prairie gusts tore open a canvas seam, letting cold trail winds and blinding road dust swirl into the carrier.',
+    cureItemId: 'repair_canvas_patch',
+    penaltyText: '-15% Coat Gloss from trail dust infiltration'
+  },
+  jarred_springs: {
+    id: 'jarred_springs',
+    name: 'Jarred Carrier Suspension & Rattles',
+    emoji: '🔩',
+    description: 'Rocky ruts loosened the carrier mounting bolts, causing bone-jarring vibration whenever the wagon rolls.',
+    cureItemId: 'repair_suspension_felt',
+    penaltyText: '-10% Pose Training readiness due to road fatigue'
+  },
+  sludgy_keg: {
+    id: 'sludgy_keg',
+    name: 'Sludgy Water Keg & Algae Film',
+    emoji: '💧',
+    description: 'Warm trail sun built up algae slime inside the drinking barrel, causing animal dehydration hesitation.',
+    cureItemId: 'camp_charcoal_filter',
+    penaltyText: '-15% Vigor & Hydration'
+  }
+};
+
 export const TRAIL_OUTFITTER_CATALOG = [
+  // --- WAGON REPAIR & AILMENT CURES (Repeatable Point Sinks) ---
+  {
+    id: 'repair_axle_grease',
+    name: 'Pine Pitch & Tallow Axle Grease',
+    category: 'wagon_repair',
+    cost: 60,
+    emoji: '🛢️',
+    description: 'Heavy pine pitch grease that lubricates dry wheel hubs, washes out gritty road mud, and stops screeching axle friction.',
+    effect: { wagonDurability: 25, temperament: 5 },
+    clearsAilment: 'squeaking_axle',
+    lore: 'Essential pioneer caravan maintenance. Smooth-rolling wheels keep transit stress to an absolute minimum.'
+  },
+  {
+    id: 'repair_canvas_patch',
+    name: 'Waxed Canvas & Heavy Needle Kit',
+    category: 'wagon_repair',
+    cost: 75,
+    emoji: '🧵',
+    description: 'Weatherproof waxed canvas patches that stitch up torn wagon covers, sealing out prairie dust storms and drafty winds.',
+    effect: { canvasCover: 30, coatCondition: 8 },
+    clearsAilment: 'torn_canvas',
+    lore: 'A secure waterproof cover keeps the animal compartment warm, dry, and protected from blinding dust squalls.'
+  },
+  {
+    id: 'repair_suspension_felt',
+    name: 'Shock-Absorbing Felt Shims & Bolts',
+    category: 'wagon_repair',
+    cost: 80,
+    emoji: '🔩',
+    description: 'Dense wool felt pads and hand-forged shims that dampen wagon vibration and quiet rattling carrier brackets.',
+    effect: { carrierCushion: 25, poseTraining: 8 },
+    clearsAilment: 'jarred_springs',
+    lore: 'Cushions the carrier against rocky mountain jolts, preserving calm leg posture and confident stance.'
+  },
+  {
+    id: 'repair_wagon_overhaul',
+    name: 'Master Wheelwright Wagon Overhaul',
+    category: 'wagon_repair',
+    cost: 160,
+    emoji: '🛠️',
+    description: 'Complete caravan overhaul: re-trues wheels, waterproofs canvas, tightens suspension, and clears all wagon ailments!',
+    effect: { wagonDurability: 100, canvasCover: 100, carrierCushion: 100, fullRestore: true },
+    clearsAllAilments: true,
+    lore: 'Restores the pioneer wagon to factory showroom condition, ensuring flawless performance across high mountain passes.'
+  },
+
+  // --- CAMP BETTERMENT & RESTOCK (Repeatable Point Sinks) ---
+  {
+    id: 'camp_cedar_bedding',
+    name: 'Mountain Pine & Cedar Flake Pack',
+    category: 'camp_betterment',
+    cost: 70,
+    emoji: '🪵',
+    description: 'Aromatic, absorbent wood shavings that freshen camp stalls, soak up trail moisture, and keep show coats clean.',
+    effect: { beddingSupply: 35, campComfort: 20, coatCondition: 10 },
+    lore: 'Clean, dry bedding is essential to prevent hock sores and maintain spotless show fur.'
+  },
+  {
+    id: 'camp_charcoal_filter',
+    name: 'Pure Charcoal Spring Water Filter',
+    category: 'camp_betterment',
+    cost: 85,
+    emoji: '🚰',
+    description: 'Pioneer filtration keg lined with mountain hardwood charcoal. Cures sludgy water and restores pure hydration reserves.',
+    effect: { waterSupply: 40, campComfort: 15, vigorHydration: 15 },
+    clearsAilment: 'sludgy_keg',
+    lore: 'Clean, crisp water encourages continuous drinking, bright alert eyes, and smooth digestive motility.'
+  },
+  {
+    id: 'camp_timothy_bales',
+    name: '1st-Cutting Sun-Cured Timothy Bale',
+    category: 'camp_betterment',
+    cost: 65,
+    emoji: '🌾',
+    description: 'Golden high-fiber mountain hay bale that refills feed reserves and keeps natural gut motility moving during camp rests.',
+    effect: { feedSupply: 35, campComfort: 15, vigorHydration: 10 },
+    lore: 'Unlimited clean grass hay is the cornerstone of digestive health and calm chewing on the trail.'
+  },
+  {
+    id: 'camp_sunshade_awning',
+    name: 'Roll-Out Campsite Sunshade Awning',
+    category: 'camp_betterment',
+    cost: 95,
+    emoji: '⛺',
+    description: 'Extends a breathable canvas canopy from the wagon side, lowering resting stall temperatures by 10-15 degrees.',
+    effect: { campComfort: 25, temperament: 15 },
+    lore: 'Deep shade during midday stops keeps core body temperatures safe and prevents heat exhaustion.'
+  },
+  {
+    id: 'camp_hearth_lantern',
+    name: 'Cozy Hearth Lantern & Calming Tea',
+    category: 'camp_betterment',
+    cost: 75,
+    emoji: '🏮',
+    description: 'Warm campfire lantern light and dried chamomile sprigs that create a serene, tranquil camp atmosphere at dusk.',
+    effect: { campComfort: 15, temperament: 15, bondXp: 15 },
+    lore: 'A peaceful campfire evening cements the bond between showman and companion after a demanding trail day.'
+  },
+  {
+    id: 'camp_grand_deluxe_betterment',
+    name: 'Grand Camp Restock & Trail Hearth Feast',
+    category: 'camp_betterment',
+    cost: 180,
+    emoji: '🏕️',
+    description: 'Master campsite betterment: refills Feed, Water, and Bedding to 100%, raises Camp Comfort to 100%, and grants +10 to all show quality pillars!',
+    effect: { fullCampRestock: true, campComfort: 100, coatCondition: 10, vigorHydration: 10, temperament: 10, poseTraining: 10 },
+    lore: 'A celebration banquet for the caravan party, placing your show animal at the peak of physical condition.'
+  },
+
+  // --- TRAIL CARE GEAR & ABILITIES (One-Time Unlocks) ---
   {
     id: 'gear_soft_brush',
     name: 'Camelhair Show Brush',
@@ -145,6 +290,17 @@ export const DEFAULT_QUEST_STATE = {
   completedNodeIds: [],
   trailPoints: 250, // Points earned from answering quizzes accurately
   conditionScore: 95, // Overall 0 - 100
+  wagonStatus: {
+    durability: 85, // 0 - 100%
+    canvasCover: 80, // 0 - 100%
+    carrierCushion: 75, // 0 - 100%
+    activeAilment: null // null or WAGON_AILMENTS[key]
+  },
+  campStatus: {
+    comfortLevel: 80, // 0 - 100%
+    hydrationPurity: 85, // 0 - 100%
+    forageFreshness: 80 // 0 - 100%
+  },
   showQuality: {
     coatCondition: 85, // 0 - 100 (Grooming, brushing, clean bedding)
     vigorHydration: 90, // 0 - 100 (Clean water, high quality forage, rest)
@@ -209,7 +365,13 @@ export class TrailQuestEngine {
       if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
         const data = localStorage.getItem(`${STORAGE_PREFIX}${learnerId}`);
         if (data) {
-          return { ...DEFAULT_QUEST_STATE, ...JSON.parse(data) };
+          const parsed = JSON.parse(data);
+          return {
+            ...DEFAULT_QUEST_STATE,
+            ...parsed,
+            wagonStatus: { ...DEFAULT_QUEST_STATE.wagonStatus, ...(parsed.wagonStatus || {}) },
+            campStatus: { ...DEFAULT_QUEST_STATE.campStatus, ...(parsed.campStatus || {}) }
+          };
         }
       }
     } catch (e) {
@@ -373,6 +535,37 @@ export class TrailQuestEngine {
     updated.showQuality = currentQuality;
     updated.trailPoints = (updated.trailPoints || 0) + earnedPoints;
 
+    // Update Wagon Integrity and Camp Comfort with trail friction
+    const currentWagon = { ...(updated.wagonStatus || DEFAULT_QUEST_STATE.wagonStatus) };
+    const currentCamp = { ...(updated.campStatus || DEFAULT_QUEST_STATE.campStatus) };
+
+    const wearDura = isCorrect ? 4 : 10;
+    const wearCanvas = isCorrect ? 2 : 6;
+    const wearCushion = isCorrect ? 2 : 5;
+
+    currentWagon.durability = Math.max(15, (currentWagon.durability || 85) - wearDura);
+    currentWagon.canvasCover = Math.max(15, (currentWagon.canvasCover || 80) - wearCanvas);
+    currentWagon.carrierCushion = Math.max(15, (currentWagon.carrierCushion || 75) - wearCushion);
+    currentCamp.comfortLevel = Math.max(15, (currentCamp.comfortLevel || 80) - (isCorrect ? 3 : 8));
+
+    // If an incorrect calamity struck, assign wagon ailment if none currently active
+    if (!isCorrect && !currentWagon.activeAilment) {
+      if (triggeredHazard?.id === 'hazard_deluge_mud') {
+        currentWagon.activeAilment = WAGON_AILMENTS.squeaking_axle;
+      } else if (triggeredHazard?.id === 'hazard_dust_storm') {
+        currentWagon.activeAilment = WAGON_AILMENTS.torn_canvas;
+      } else if (triggeredHazard?.id === 'hazard_downed_timber') {
+        currentWagon.activeAilment = WAGON_AILMENTS.jarred_springs;
+      } else if (triggeredHazard?.id === 'hazard_contaminated_water') {
+        currentWagon.activeAilment = WAGON_AILMENTS.sludgy_keg;
+      } else if (currentWagon.durability < 60) {
+        currentWagon.activeAilment = WAGON_AILMENTS.squeaking_axle;
+      }
+    }
+
+    updated.wagonStatus = currentWagon;
+    updated.campStatus = currentCamp;
+
     // Check for new cosmetic unlocks (skins, pets, upgraded equipment, emotes, decor)
     const unlockedNow = [];
     ALL_COSMETICS.forEach(cosmetic => {
@@ -418,7 +611,7 @@ export class TrailQuestEngine {
   }
 
   /**
-   * Purchases care gear or abilities from the Trail Outfitter with earned Trail Points.
+   * Purchases care gear, abilities, wagon repairs, or camp betterments with earned Trail Points.
    */
   static buyOutfitterItem(state, itemId) {
     const item = TRAIL_OUTFITTER_CATALOG.find(i => i.id === itemId);
@@ -432,13 +625,82 @@ export class TrailQuestEngine {
     }
 
     const purchased = state.purchasedItemIds || [];
-    if (purchased.includes(itemId)) {
+    const isRepeatable = item.category === 'wagon_repair' || item.category === 'camp_betterment';
+    if (!isRepeatable && purchased.includes(itemId)) {
       throw new Error(`You already possess ${item.name}!`);
     }
 
     const updated = { ...state };
     updated.trailPoints = currentPoints - item.cost;
-    updated.purchasedItemIds = [...purchased, itemId];
+    if (!isRepeatable) {
+      updated.purchasedItemIds = [...purchased, itemId];
+    }
+
+    // Wagon repairs & cures
+    if (item.category === 'wagon_repair') {
+      const wagon = { ...(updated.wagonStatus || DEFAULT_QUEST_STATE.wagonStatus) };
+      if (item.effect.fullRestore) {
+        wagon.durability = 100;
+        wagon.canvasCover = 100;
+        wagon.carrierCushion = 100;
+      } else {
+        if (item.effect.wagonDurability) {
+          wagon.durability = Math.min(100, (wagon.durability || 85) + item.effect.wagonDurability);
+        }
+        if (item.effect.canvasCover) {
+          wagon.canvasCover = Math.min(100, (wagon.canvasCover || 80) + item.effect.canvasCover);
+        }
+        if (item.effect.carrierCushion) {
+          wagon.carrierCushion = Math.min(100, (wagon.carrierCushion || 75) + item.effect.carrierCushion);
+        }
+      }
+
+      if (item.clearsAllAilments) {
+        wagon.activeAilment = null;
+      } else if (item.clearsAilment && wagon.activeAilment?.id === item.clearsAilment) {
+        wagon.activeAilment = null;
+      }
+      updated.wagonStatus = wagon;
+    }
+
+    // Camp betterment & supplies restock
+    if (item.category === 'camp_betterment') {
+      const camp = { ...(updated.campStatus || DEFAULT_QUEST_STATE.campStatus) };
+      if (item.effect.campComfort === 100) {
+        camp.comfortLevel = 100;
+      } else if (item.effect.campComfort) {
+        camp.comfortLevel = Math.min(100, (camp.comfortLevel || 80) + item.effect.campComfort);
+      }
+
+      const supplies = { ...(updated.supplies || DEFAULT_QUEST_STATE.supplies) };
+      if (item.effect.fullCampRestock) {
+        supplies.feed = 100;
+        supplies.water = 100;
+        supplies.bedding = 100;
+      } else {
+        if (item.effect.feedSupply) {
+          supplies.feed = Math.min(100, (supplies.feed || 60) + item.effect.feedSupply);
+        }
+        if (item.effect.waterSupply) {
+          supplies.water = Math.min(100, (supplies.water || 50) + item.effect.waterSupply);
+        }
+        if (item.effect.beddingSupply) {
+          supplies.bedding = Math.min(100, (supplies.bedding || 40) + item.effect.beddingSupply);
+        }
+      }
+      updated.supplies = supplies;
+
+      if (item.effect.bondXp) {
+        const bond = { ...(updated.herdBond || DEFAULT_QUEST_STATE.herdBond) };
+        bond.xp = (bond.xp || 0) + item.effect.bondXp;
+        updated.herdBond = bond;
+      }
+
+      if (item.clearsAilment && updated.wagonStatus?.activeAilment?.id === item.clearsAilment) {
+        updated.wagonStatus = { ...updated.wagonStatus, activeAilment: null };
+      }
+      updated.campStatus = camp;
+    }
 
     // Apply immediate stat boosts
     const quality = { ...(updated.showQuality || { coatCondition: 85, vigorHydration: 90, temperament: 80, poseTraining: 75 }) };
@@ -452,6 +714,41 @@ export class TrailQuestEngine {
     return {
       updatedState: updated,
       purchasedItem: item
+    };
+  }
+
+  /**
+   * Performs a direct wagon repair using earned points.
+   */
+  static repairWagon(state, repairItemId) {
+    return TrailQuestEngine.buyOutfitterItem(state, repairItemId);
+  }
+
+  /**
+   * Performs camp betterment using earned points.
+   */
+  static betterCamp(state, bettermentItemId) {
+    return TrailQuestEngine.buyOutfitterItem(state, bettermentItemId);
+  }
+
+  /**
+   * Quick-cures currently active wagon ailment if player has sufficient points.
+   */
+  static cureActiveAilment(state) {
+    const ailment = state.wagonStatus?.activeAilment;
+    if (!ailment) {
+      return { updatedState: state, cured: false, message: 'Your wagon is running smoothly with no active ailments!' };
+    }
+    const cureItem = TRAIL_OUTFITTER_CATALOG.find(i => i.id === ailment.cureItemId);
+    if (!cureItem) {
+      return { updatedState: state, cured: false, message: 'No remedy available for this ailment.' };
+    }
+    const result = TrailQuestEngine.buyOutfitterItem(state, cureItem.id);
+    return {
+      updatedState: result.updatedState,
+      cured: true,
+      cureItem,
+      message: `Cured ${ailment.name} with ${cureItem.name}! Wagon condition restored.`
     };
   }
 

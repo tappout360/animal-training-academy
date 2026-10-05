@@ -24,6 +24,18 @@ export default function PartyConditionCard({
   const equippedPet = ALL_COSMETICS.find(c => c.id === equipped.companion_pet);
   const equippedGear = ALL_COSMETICS.find(c => c.id === equipped.trail_gear);
 
+  const wagon = questState.wagonStatus || {
+    durability: 85,
+    canvasCover: 80,
+    carrierCushion: 75,
+    activeAilment: null
+  };
+  const camp = questState.campStatus || {
+    comfortLevel: 80,
+    hydrationPurity: 85,
+    forageFreshness: 80
+  };
+
   return (
     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-4">
       
@@ -105,6 +117,52 @@ export default function PartyConditionCard({
             className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all duration-500" 
             style={{ width: `${bondPercent}%` }}
           />
+        </div>
+      </div>
+
+      {/* Wagon & Camp Integrity Strip */}
+      <div className="mx-6 p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/70">
+        <div className="flex items-center justify-between text-xs mb-2">
+          <div className="flex items-center gap-1.5 font-bold text-slate-700">
+            <Wrench className="w-3.5 h-3.5 text-amber-600" />
+            <span>Pioneer Wagon &amp; Camp Health</span>
+          </div>
+          {wagon.activeAilment ? (
+            <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+              ⚠️ {wagon.activeAilment.name}
+            </span>
+          ) : (
+            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              ✨ Caravan Roadworthy
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+          <div className="p-2 rounded-xl bg-white border border-slate-200/80">
+            <div className="text-[10px] text-slate-400 font-bold uppercase">Wagon Frame</div>
+            <div className={`font-black text-xs ${wagon.durability >= 70 ? 'text-emerald-600' : (wagon.durability >= 40 ? 'text-amber-600' : 'text-rose-600')}`}>
+              {wagon.durability}%
+            </div>
+          </div>
+          <div className="p-2 rounded-xl bg-white border border-slate-200/80">
+            <div className="text-[10px] text-slate-400 font-bold uppercase">Canvas Shelter</div>
+            <div className={`font-black text-xs ${wagon.canvasCover >= 70 ? 'text-emerald-600' : (wagon.canvasCover >= 40 ? 'text-amber-600' : 'text-rose-600')}`}>
+              {wagon.canvasCover}%
+            </div>
+          </div>
+          <div className="p-2 rounded-xl bg-white border border-slate-200/80">
+            <div className="text-[10px] text-slate-400 font-bold uppercase">Camp Comfort</div>
+            <div className={`font-black text-xs ${camp.comfortLevel >= 70 ? 'text-emerald-600' : (camp.comfortLevel >= 40 ? 'text-amber-600' : 'text-rose-600')}`}>
+              {camp.comfortLevel}%
+            </div>
+          </div>
+          <div className="p-2 rounded-xl bg-white border border-slate-200/80">
+            <div className="text-[10px] text-slate-400 font-bold uppercase">Crate Suspension</div>
+            <div className={`font-black text-xs ${wagon.carrierCushion >= 70 ? 'text-emerald-600' : (wagon.carrierCushion >= 40 ? 'text-amber-600' : 'text-rose-600')}`}>
+              {wagon.carrierCushion}%
+            </div>
+          </div>
         </div>
       </div>
 

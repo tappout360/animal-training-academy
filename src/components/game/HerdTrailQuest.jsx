@@ -43,6 +43,7 @@ export default function HerdTrailQuest({
   
   // Game starts on Morning Barn Check (Living Herd First!)
   const [activeTab, setActiveTab] = useState('morning'); // 'morning' | 'trail' | 'outfitter' | 'showring' | 'family' | 'story' | 'overworld' | 'locker' | 'habitat'
+  const [outfitterCategory, setOutfitterCategory] = useState('all');
   const [activeNode, setActiveNode] = useState(null);
   const [activeHazard, setActiveHazard] = useState(null);
   const [isCoachSignalModalOpen, setIsCoachSignalModalOpen] = useState(false);
@@ -234,6 +235,12 @@ export default function HerdTrailQuest({
     setQuestState(updated);
     TrailQuestEngine.saveState(learner.id, updated);
     setActiveTab('trail');
+  };
+
+  const handleOpenOutfitter = (category = 'all') => {
+    soundEffects.playTap();
+    setOutfitterCategory(category);
+    setActiveTab('outfitter');
   };
 
   const handleClaimDailyStreak = () => {
@@ -468,7 +475,7 @@ export default function HerdTrailQuest({
             onOpenMorningCheck={() => setActiveTab('morning')}
             onOpenShowRing={() => setActiveTab('showring')}
             onOpenFamilyBoard={() => setActiveTab('family')}
-            onOpenOutfitter={() => setActiveTab('outfitter')}
+            onOpenOutfitter={handleOpenOutfitter}
           />
 
           {/* Animated Wagon Trail Visual Viewport */}
@@ -476,7 +483,7 @@ export default function HerdTrailQuest({
             questState={questState}
             trailPack={currentTrailPack}
             onCareAction={handleCareAction}
-            onOpenOutfitter={() => setActiveTab('outfitter')}
+            onOpenOutfitter={handleOpenOutfitter}
             onEnterShowRing={() => setActiveTab('showring')}
             onAskMentor={() => onOpenAiTrainer?.()}
           />
@@ -503,6 +510,7 @@ export default function HerdTrailQuest({
         <TrailOutfitterStore
           questState={questState}
           onBuyItem={handleBuyItem}
+          initialCategory={outfitterCategory}
           onClose={() => setActiveTab('trail')}
         />
       )}

@@ -33,6 +33,19 @@ export default function VisualWagonTrailViewport({
     poseTraining: 75
   };
 
+  const wagon = questState.wagonStatus || {
+    durability: 85,
+    canvasCover: 80,
+    carrierCushion: 75,
+    activeAilment: null
+  };
+
+  const camp = questState.campStatus || {
+    comfortLevel: 80,
+    hydrationPurity: 85,
+    forageFreshness: 80
+  };
+
   // Calculate weighted show quality score
   const overallShowScore = Math.round(
     showQuality.coatCondition * 0.25 +
@@ -110,6 +123,17 @@ export default function VisualWagonTrailViewport({
             </button>
           </div>
 
+          {/* Wagon & Camp Integrity Mini Pill */}
+          <div className="hidden md:flex items-center gap-2 bg-stone-900/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-stone-700 text-xs text-stone-300 shadow-lg">
+            <span className="flex items-center gap-1 font-semibold">
+              <span>🛠️</span> Wagon: <span className={wagon.durability >= 70 ? 'text-emerald-400' : (wagon.durability >= 40 ? 'text-amber-400' : 'text-rose-400')}>{wagon.durability}%</span>
+            </span>
+            <span className="text-stone-500">·</span>
+            <span className="flex items-center gap-1 font-semibold">
+              <span>🏕️</span> Camp: <span className={camp.comfortLevel >= 70 ? 'text-emerald-400' : (camp.comfortLevel >= 40 ? 'text-amber-400' : 'text-rose-400')}>{camp.comfortLevel}%</span>
+            </span>
+          </div>
+
           {/* Destination Milestone Counter & Weather */}
           <div className="flex items-center gap-2">
             <div className="bg-stone-900/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-stone-700 text-xs font-medium text-stone-200 flex items-center gap-2 shadow-lg">
@@ -128,6 +152,23 @@ export default function VisualWagonTrailViewport({
             </button>
           </div>
         </div>
+
+        {/* Urgent Wagon Ailment Alert Banner */}
+        {wagon.activeAilment && (
+          <div className="absolute top-14 left-3 sm:top-16 sm:left-4 z-20 bg-rose-950/90 border border-rose-500 text-white px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-2 text-xs animate-bounce">
+            <span className="text-base">{wagon.activeAilment.emoji}</span>
+            <div>
+              <span className="font-bold text-rose-200">{wagon.activeAilment.name}</span>
+              <span className="text-[10px] text-rose-300 ml-1.5 hidden sm:inline">({wagon.activeAilment.penaltyText})</span>
+            </div>
+            <button
+              onClick={() => onOpenOutfitter?.('wagon_repair')}
+              className="bg-rose-600 hover:bg-rose-500 text-white font-black text-[10px] uppercase px-2.5 py-1 rounded-lg ml-1 shadow"
+            >
+              Fix with Points
+            </button>
+          </div>
+        )}
 
         {/* Dynamic Speech / Pet Message Bubble */}
         {petMessage && (
@@ -304,7 +345,7 @@ export default function VisualWagonTrailViewport({
 
         {/* Interactive Quick Care Hotbar */}
         <div className="mt-3 pt-3 border-t border-stone-850 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wide mr-1">
               Trail Care:
             </span>
@@ -336,10 +377,27 @@ export default function VisualWagonTrailViewport({
             >
               <span>🪞</span> Practice Pose
             </button>
+
+            {/* Quick Wagon & Camp Economy Point Sinks */}
+            <span className="text-stone-700 mx-1">|</span>
+            <button
+              onClick={() => onOpenOutfitter?.('wagon_repair')}
+              className="bg-amber-950/80 hover:bg-amber-900 border border-amber-600/60 text-amber-200 text-xs font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
+              title="Spend Trail Points to repair wagon wheels, grease axles, and stitch canvas"
+            >
+              <span>🛠️</span> Repair Wagon
+            </button>
+            <button
+              onClick={() => onOpenOutfitter?.('camp_betterment')}
+              className="bg-teal-950/80 hover:bg-teal-900 border border-teal-600/60 text-teal-200 text-xs font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
+              title="Spend Trail Points to restock camp supplies and upgrade shelter"
+            >
+              <span>🏕️</span> Better Camp
+            </button>
           </div>
 
           <div className="text-[11px] text-amber-300/80 font-medium">
-            Answer trail quizzes accurately to earn more points for trading post gear!
+            Spend points to cure wagon wear and restock camp!
           </div>
         </div>
       </div>

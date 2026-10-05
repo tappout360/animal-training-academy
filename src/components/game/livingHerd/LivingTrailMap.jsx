@@ -209,7 +209,7 @@ export default function LivingTrailMap({
           className="p-3 bg-white/10 hover:bg-white/20 border border-white/15 rounded-2xl transition flex items-center justify-center gap-2 text-xs font-bold text-slate-200 hover:text-white"
         >
           <Compass className="w-4 h-4 text-emerald-400" />
-          <span>Trading Post</span>
+          <span>Trading Post &amp; Repairs</span>
         </button>
 
         {/* Friends / Family Barn Board */}
