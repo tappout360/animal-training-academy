@@ -253,6 +253,34 @@ export default function ChampionshipShowRing({
                   {showQuality.poseTraining >= 80 ? '🏆 Poses firmly with front feet aligned under eyes!' : 'Needs gentle repositioning of front feet.'}
                 </p>
               </div>
+
+              {/* Spotless Cleanliness from Clean Up After */}
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 sm:col-span-2">
+                <div className="flex justify-between items-center text-xs font-bold text-emerald-950 mb-1">
+                  <span className="flex items-center gap-1.5">
+                    <span>🧹</span>
+                    <span>Clean Quarters &amp; Spotless Hocks</span>
+                  </span>
+                  <span className="font-black">{showQuality.cleanliness || 95}/100 Pts</span>
+                </div>
+                <div className="w-full bg-emerald-200 h-2.5 rounded-full overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full transition-all duration-700" style={{ width: `${showQuality.cleanliness || 95}%` }} />
+                </div>
+                <p className="text-[11px] text-emerald-800 mt-2 font-medium">
+                  ✨ Regular stall cleaning &amp; dry pine shavings prevent urine staining and sore hocks. Zero disqualifying color stains!
+                </p>
+              </div>
+            </div>
+
+            {/* Pet Care Stewardship Advantage Card */}
+            <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 border border-amber-400/50 rounded-2xl p-3.5 text-center space-y-1">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-black text-amber-900 uppercase tracking-wide">
+                <span>🏆</span>
+                <span>Pet Care Advantage Active: Daily Care Elevated Your Score!</span>
+              </div>
+              <p className="text-[11px] text-amber-800">
+                Feeding (vigor), watering (hydration), brushing (sheen), cleaning up (spotless hocks), and daily love (calm poise) combine for up to a <strong>+15 Points Stewardship Boost</strong>!
+              </p>
             </div>
 
             <div className="text-center pt-2">
@@ -370,6 +398,25 @@ export default function ChampionshipShowRing({
 
                 <div className="text-xs text-amber-300 font-mono mt-2">
                   Total Championship Mark: <span className="text-base font-black text-white">{awardResult.totalScore} / 100 Pts</span>
+                </div>
+
+                {/* Pet Care Stewardship Badges */}
+                <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold">
+                  <span className="bg-amber-400/20 text-amber-200 border border-amber-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    🌾 Feed (Vigor)
+                  </span>
+                  <span className="bg-cyan-400/20 text-cyan-200 border border-cyan-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    💧 Water (Hydration)
+                  </span>
+                  <span className="bg-purple-400/20 text-purple-200 border border-purple-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    ✨ Brush (Coat Luster)
+                  </span>
+                  <span className="bg-emerald-400/20 text-emerald-200 border border-emerald-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    🧹 Clean Up (Spotless Hocks)
+                  </span>
+                  <span className="bg-rose-400/20 text-rose-200 border border-rose-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    ❤️ Love (Calm Poise)
+                  </span>
                 </div>
               </div>
             </div>

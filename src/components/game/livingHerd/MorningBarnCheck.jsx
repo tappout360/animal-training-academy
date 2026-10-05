@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { soundEffects } from '../../../utils/audioEffects';
 import { RABBIT_TRAIL_DAYS, getRabbitDayScript } from '../../../data/game/rabbitTrailScript';
+import LiveHandsOnBarnCheck from './LiveHandsOnBarnCheck';
 
 export default function MorningBarnCheck({
   dailyStatus = {},
@@ -22,6 +23,7 @@ export default function MorningBarnCheck({
   onOpenTrailRun,
   onOpenAiTrainer
 }) {
+  const [barnMode, setBarnMode] = useState('hands_on'); // 'hands_on' | 'story_challenge'
   const [activeDayNumber, setActiveDayNumber] = useState(dailyStatus.currentDayNumber || 1);
   const [selectedOptionId, setSelectedOptionId] = useState(null);
   const [sequenceOrder, setSequenceOrder] = useState([]);
@@ -154,13 +156,63 @@ export default function MorningBarnCheck({
         </div>
       </div>
 
-      {/* Day-1 to Day-7 Habit Loop Stepper */}
-      <div className="p-3 bg-white/90 rounded-2xl border border-amber-200/80 shadow-xs space-y-2">
-        <div className="flex items-center justify-between text-xs font-black text-slate-700">
-          <span className="flex items-center gap-1.5">
-            <span>📅</span>
-            <span>Rabbit Trail Habit Loop (Week 1):</span>
+      {/* Mode Switcher: Hands-On Live Pet Care vs Story Habit Loop */}
+      <div className="flex items-center justify-between p-1.5 bg-amber-100/70 border border-amber-300/80 rounded-2xl gap-2 shadow-2xs">
+        <button
+          onClick={() => {
+            soundEffects.playTap();
+            setBarnMode('hands_on');
+          }}
+          className={`flex-1 py-2 px-3 rounded-xl font-black text-xs transition flex items-center justify-center gap-2 cursor-pointer ${
+            barnMode === 'hands_on'
+              ? 'bg-amber-500 text-slate-950 shadow-xs'
+              : 'text-amber-900 hover:bg-amber-200/60'
+          }`}
+        >
+          <span>🧤</span>
+          <span>Hands-On Pet Care (Feed, Water, Brush, Clean, Love)</span>
+          <span className="text-[10px] bg-emerald-700 text-white px-2 py-0.5 rounded-full font-bold">
+            +15 Show Pts
           </span>
+        </button>
+
+        <button
+          onClick={() => {
+            soundEffects.playTap();
+            setBarnMode('story_challenge');
+          }}
+          className={`flex-1 py-2 px-3 rounded-xl font-black text-xs transition flex items-center justify-center gap-2 cursor-pointer ${
+            barnMode === 'story_challenge'
+              ? 'bg-amber-500 text-slate-950 shadow-xs'
+              : 'text-amber-900 hover:bg-amber-200/60'
+          }`}
+        >
+          <span>📋</span>
+          <span>Day-1 to Day-7 Habit Story & Curriculum</span>
+        </button>
+      </div>
+
+      {barnMode === 'hands_on' ? (
+        <LiveHandsOnBarnCheck
+          dailyStatus={dailyStatus}
+          questState={questState}
+          trailPack={trailPack}
+          onCareCompleted={(results) => {
+            if (onResolveNeed && todayNeed) {
+              onResolveNeed(todayNeed.id, 'opt_cool_shade');
+            }
+          }}
+          onOpenTrailRun={onOpenTrailRun}
+        />
+      ) : (
+        <>
+          {/* Day-1 to Day-7 Habit Loop Stepper */}
+          <div className="p-3 bg-white/90 rounded-2xl border border-amber-200/80 shadow-xs space-y-2">
+            <div className="flex items-center justify-between text-xs font-black text-slate-700">
+              <span className="flex items-center gap-1.5">
+                <span>📅</span>
+                <span>Rabbit Trail Habit Loop (Week 1):</span>
+              </span>
           <span className="text-amber-800 font-bold">
             Day {activeDayNumber} of 7 • {currentDayScript.seasonChapter}
           </span>
@@ -626,6 +678,8 @@ export default function MorningBarnCheck({
         </div>
 
       </div>
+      </>
+      )}
 
     </div>
   );

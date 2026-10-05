@@ -307,7 +307,15 @@ export const DEFAULT_QUEST_STATE = {
     coatCondition: 85, // 0 - 100 (Grooming, brushing, clean bedding)
     vigorHydration: 90, // 0 - 100 (Clean water, high quality forage, rest)
     temperament: 80, // 0 - 100 (Gentle handling, low stress)
-    poseTraining: 75 // 0 - 100 (Practicing table stance at rest camps)
+    poseTraining: 75, // 0 - 100 (Practicing table stance at rest camps)
+    cleanliness: 85 // 0 - 100 (Clean stall bedding, spotless hocks/belly)
+  },
+  petCareCounts: {
+    feed: 0,
+    water: 0,
+    brush: 0,
+    clean_up: 0,
+    fill_with_love: 0
   },
   purchasedItemIds: ['gear_soft_brush', 'gear_spring_keg'],
   supplies: {
@@ -793,8 +801,91 @@ export class TrailQuestEngine {
   }
 
   /**
+   * Records a hands-on pet care action (feed, water, brush, clean_up, fill_with_love).
+   * All these actions directly elevate show quality metrics and add up to a higher
+   * score, higher rosette ribbon, and top placement at the championship show ring!
+   */
+  static recordPetCareAction(state, actionType) {
+    const updated = { ...state };
+    const quality = { ...(updated.showQuality || { coatCondition: 85, vigorHydration: 90, temperament: 80, poseTraining: 75, cleanliness: 85 }) };
+    const counts = { ...(updated.petCareCounts || { feed: 0, water: 0, brush: 0, clean_up: 0, fill_with_love: 0 }) };
+    const bond = { ...(updated.herdBond || { xp: 0, level: 1 }) };
+    
+    let message = '';
+    let showBenefit = '';
+
+    switch (actionType) {
+      case 'feed':
+        quality.vigorHydration = Math.min(100, (quality.vigorHydration || 85) + 8);
+        updated.conditionScore = Math.min(100, (updated.conditionScore || 85) + 5);
+        counts.feed = (counts.feed || 0) + 1;
+        bond.xp = (bond.xp || 0) + 15;
+        message = 'Barnaby enthusiastically munches timothy hay & pellets. Gut motility energized!';
+        showBenefit = '+Vigor & Alert Eye Expression in Show Ring';
+        break;
+
+      case 'water':
+        quality.vigorHydration = Math.min(100, (quality.vigorHydration || 85) + 12);
+        updated.conditionScore = Math.min(100, (updated.conditionScore || 85) + 5);
+        counts.water = (counts.water || 0) + 1;
+        bond.xp = (bond.xp || 0) + 15;
+        message = 'Barnaby drinks fresh mountain spring water. Rehydrated and fully refreshed!';
+        showBenefit = '+Hydration & Skin Elasticity in Show Ring';
+        break;
+
+      case 'brush':
+        quality.coatCondition = Math.min(100, (quality.coatCondition || 80) + 12);
+        counts.brush = (counts.brush || 0) + 1;
+        bond.xp = (bond.xp || 0) + 20;
+        message = 'Soft-bristle brushing aligns the guard hairs and clears loose underfur.';
+        showBenefit = '+Championship Coat Luster & Clean Rollback in Show Ring';
+        break;
+
+      case 'clean_up':
+        quality.cleanliness = Math.min(100, (quality.cleanliness || 80) + 15);
+        quality.coatCondition = Math.min(100, (quality.coatCondition || 80) + 5);
+        counts.clean_up = (counts.clean_up || 0) + 1;
+        bond.xp = (bond.xp || 0) + 20;
+        message = 'Stall mucked out and fresh aromatic pine bedding spread. Clean living quarters!';
+        showBenefit = '+Spotless Hocks & Clean Underside (Zero Staining Faults)';
+        break;
+
+      case 'fill_with_love':
+        quality.temperament = Math.min(100, (quality.temperament || 75) + 15);
+        counts.fill_with_love = (counts.fill_with_love || 0) + 1;
+        bond.xp = (bond.xp || 0) + 30;
+        message = 'Barnaby purrs contentedly with tooth-chattering happiness and nuzzles your hand.';
+        showBenefit = '+Calm Table Poise & Confident Ring Presentation';
+        break;
+
+      default:
+        break;
+    }
+
+    // Check bond level up
+    if (bond.xp >= bond.level * 100) {
+      bond.level += 1;
+    }
+
+    updated.showQuality = quality;
+    updated.petCareCounts = counts;
+    updated.herdBond = bond;
+
+    return {
+      updatedState: updated,
+      actionType,
+      message,
+      showBenefit,
+      showQuality: quality,
+      totalCareActions: Object.values(counts).reduce((a, b) => a + b, 0)
+    };
+  }
+
+  /**
    * Evaluates the Grand Championship Show Ring performance based on
    * arriving animal condition + showmanship oral exam score or 3-station scoring.
+   * Pet care actions (feed, water, brush, clean up, fill with love) add up directly
+   * to a stewardship bonus that elevates final score and placement!
    */
   static evaluateShowRing(state, options = {}) {
     let { oralExamScore, stationScore, handlingScore, judgeQAScore, exhibitorNotes = '' } = options;
@@ -803,22 +894,30 @@ export class TrailQuestEngine {
     let physicalScore = 0;
     let knowledgeScore = 0;
 
+    // Calculate pet care stewardship bonus from completed actions
+    const careCounts = state.petCareCounts || {};
+    const totalCareDone = (careCounts.feed || 0) + (careCounts.water || 0) + 
+                          (careCounts.brush || 0) + (careCounts.clean_up || 0) + 
+                          (careCounts.fill_with_love || 0);
+    const careStewardshipBonus = Math.min(15, totalCareDone * 2);
+
     if (stationScore !== undefined && handlingScore !== undefined && judgeQAScore !== undefined) {
       totalScore = Math.min(100, Math.round(stationScore + handlingScore + judgeQAScore));
       physicalScore = handlingScore;
       knowledgeScore = stationScore + judgeQAScore;
     } else {
       const exam = oralExamScore !== undefined ? oralExamScore : 100;
-      const quality = state.showQuality || { coatCondition: 85, vigorHydration: 90, temperament: 80, poseTraining: 75 };
+      const quality = state.showQuality || { coatCondition: 85, vigorHydration: 90, temperament: 80, poseTraining: 75, cleanliness: 85 };
       physicalScore = (
         quality.coatCondition * 0.25 +
         quality.vigorHydration * 0.25 +
         quality.temperament * 0.25 +
-        quality.poseTraining * 0.25
+        (quality.cleanliness || 85) * 0.15 +
+        quality.poseTraining * 0.10
       ) * 0.5;
       knowledgeScore = (exam / 100) * 50;
       const hasRingPoise = (state.purchasedItemIds || []).includes('skill_ring_presence');
-      const bonus = hasRingPoise ? 5 : 0;
+      const bonus = (hasRingPoise ? 5 : 0) + careStewardshipBonus;
       totalScore = Math.min(100, Math.round(physicalScore + knowledgeScore + bonus));
     }
 
@@ -893,8 +992,10 @@ export class TrailQuestEngine {
       superintendentTitle: 'Chief Academy Superintendent',
       sourceStandard: 'Current ARBA Standard of Perfection & 4-H Showmanship Manual',
       judgeFeedback: totalScore >= 90
-        ? 'Superb demonstration of 4-H husbandry! Coat sheen, hydration, table composure, and oral standard defense are outstanding. Highly commendable!'
-        : 'Good effort across the overland trail! Continue practicing breed standard posing and daily grooming before the next regional convention.'
+        ? `Superb demonstration of 4-H husbandry! Coat sheen, hydration, table composure, and oral standard defense are outstanding.${
+            totalCareDone > 0 ? ` The judge specifically commends the exhibitor's dedication to daily feeding, watering, brushing, clean stall bedding, and loving handling (${totalCareDone} recorded care sessions), which yielded immaculate hocks, vibrant vigor, and calm table trust!` : ''
+          } Highly commendable!`
+        : `Good effort across the overland trail! Continue daily feeding, watering, brushing, stall cleaning, and gentle loving handling to boost your score for the next regional championship.`
     };
 
     const careerLogEntry = {

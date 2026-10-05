@@ -1762,6 +1762,59 @@ test('Championship Show Ring awards Reserve Grand Champion and Best of Breed bas
   assert.strictEqual(resBOB.placementRank, 3);
 });
 
+test('Pet Care Actions (Feed, Water, Brush, Clean Up, Fill with Love) elevate metrics and add up to a better show score & placement', () => {
+  let state = TrailQuestEngine.loadState('test_pet_care_learner');
+
+  // 1. Feed
+  const feedRes = TrailQuestEngine.recordPetCareAction(state, 'feed');
+  assert.strictEqual(feedRes.actionType, 'feed');
+  assert.ok(feedRes.showBenefit.includes('Vigor'));
+  assert.strictEqual(feedRes.updatedState.petCareCounts.feed, 1);
+  state = feedRes.updatedState;
+
+  // 2. Water
+  const waterRes = TrailQuestEngine.recordPetCareAction(state, 'water');
+  assert.strictEqual(waterRes.actionType, 'water');
+  assert.ok(waterRes.showBenefit.includes('Hydration'));
+  assert.strictEqual(waterRes.updatedState.petCareCounts.water, 1);
+  state = waterRes.updatedState;
+
+  // 3. Brush
+  const brushRes = TrailQuestEngine.recordPetCareAction(state, 'brush');
+  assert.strictEqual(brushRes.actionType, 'brush');
+  assert.ok(brushRes.showBenefit.includes('Coat Luster'));
+  assert.strictEqual(brushRes.updatedState.petCareCounts.brush, 1);
+  state = brushRes.updatedState;
+
+  // 4. Clean Up After
+  const cleanRes = TrailQuestEngine.recordPetCareAction(state, 'clean_up');
+  assert.strictEqual(cleanRes.actionType, 'clean_up');
+  assert.ok(cleanRes.showBenefit.includes('Spotless Hocks'));
+  assert.strictEqual(cleanRes.updatedState.petCareCounts.clean_up, 1);
+  state = cleanRes.updatedState;
+
+  // 5. Fill with Love
+  const loveRes = TrailQuestEngine.recordPetCareAction(state, 'fill_with_love');
+  assert.strictEqual(loveRes.actionType, 'fill_with_love');
+  assert.ok(loveRes.showBenefit.includes('Calm Table Poise'));
+  assert.strictEqual(loveRes.updatedState.petCareCounts.fill_with_love, 1);
+  state = loveRes.updatedState;
+
+  // Verify all 5 actions recorded
+  assert.strictEqual(loveRes.totalCareActions, 5);
+
+  // Now evaluate show ring with pet care stewardship bonus
+  const evaluated = TrailQuestEngine.evaluateShowRing(state, {
+    oralExamScore: 90
+  });
+
+  // Verify that the pet care actions added up to a higher score & top placement
+  assert.ok(evaluated.totalScore >= 95, 'Care stewardship bonus should boost score to 95+');
+  assert.strictEqual(evaluated.placement, '1st Place · Best in Show Grand Champion');
+  assert.strictEqual(evaluated.placementRank, 1);
+  assert.ok(evaluated.awardRecord.judgeFeedback.includes('recorded care sessions'), 'Judge remarks must commend pet care dedication');
+});
+
 // Summary
 console.log(`\n========================================`);
 console.log(`Test Results: ${passCount} Passed, ${failCount} Failed`);

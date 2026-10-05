@@ -32,17 +32,25 @@ export default function AnimalCareAnimationModal({
     let text = '';
     let particleIcon = '✨';
 
-    if (action === 'brush') {
+    if (action === 'feed') {
+      soundEffects.playRustle();
+      text = `Offering crisp golden timothy hay and measured pellets to ${companion.name}... Vibrant gut motility and energy restored!`;
+      particleIcon = '🌾';
+    } else if (action === 'brush') {
       soundEffects.playSuccessChime();
       text = `Gently smoothing ${companion.name}’s coat with the camelhair brush... Golden sheen glowing!`;
       particleIcon = '✨';
     } else if (action === 'water') {
-      soundEffects.playTap();
+      soundEffects.playWater();
       text = `Pouring chilled mountain spring water into the ceramic dish... Crisp hydration restored!`;
       particleIcon = '💧';
-    } else if (action === 'comfort') {
-      soundEffects.playLevelUp();
-      text = `Gently stroking ${companion.name} and offering soothing chamomile... Purring & soft loafing!`;
+    } else if (action === 'clean_up') {
+      soundEffects.playRustle();
+      text = `Mucking out soiled corners and scattering clean, aromatic dry pine bedding... Spotless hocks protected!`;
+      particleIcon = '🪵';
+    } else if (action === 'comfort' || action === 'fill_with_love') {
+      soundEffects.playPurr();
+      text = `Gently stroking ${companion.name} with loving reassurance... Purring, tooth chattering & deep trust!`;
       particleIcon = '💖';
     } else if (action === 'pose') {
       soundEffects.playVictoryFanfare();
@@ -212,26 +220,26 @@ export default function AnimalCareAnimationModal({
             </div>
           </div>
 
-          {/* Interactive Care Hotbar: 4 Actions */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {/* Interactive Care Hotbar: 5 Pet Care Actions */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             <button
-              onClick={() => { setCurrentAction('brush'); triggerCareAnimation('brush'); }}
-              className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2 ${
-                currentAction === 'brush'
+              onClick={() => { setCurrentAction('feed'); triggerCareAnimation('feed'); }}
+              className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2 cursor-pointer ${
+                currentAction === 'feed'
                   ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold ring-2 ring-amber-400/20'
                   : 'bg-stone-50 border-stone-200 hover:bg-stone-100 text-stone-700'
               }`}
             >
-              <span className="text-lg">🪮</span>
+              <span className="text-lg">🌾</span>
               <div>
-                <div className="text-xs font-black">Brush Fur</div>
-                <div className="text-[10px] text-amber-700">+15% Gloss</div>
+                <div className="text-xs font-black">Feed</div>
+                <div className="text-[10px] text-amber-700">+Vigor</div>
               </div>
             </button>
 
             <button
               onClick={() => { setCurrentAction('water'); triggerCareAnimation('water'); }}
-              className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2 ${
+              className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2 cursor-pointer ${
                 currentAction === 'water'
                   ? 'bg-cyan-100 border-cyan-400 text-cyan-950 font-bold ring-2 ring-cyan-400/20'
                   : 'bg-stone-50 border-stone-200 hover:bg-stone-100 text-stone-700'
@@ -239,40 +247,63 @@ export default function AnimalCareAnimationModal({
             >
               <span className="text-lg">🚰</span>
               <div>
-                <div className="text-xs font-black">Spring Water</div>
-                <div className="text-[10px] text-cyan-700">+15% Hydrate</div>
+                <div className="text-xs font-black">Water</div>
+                <div className="text-[10px] text-cyan-700">+Hydration</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => { setCurrentAction('brush'); triggerCareAnimation('brush'); }}
+              className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2 cursor-pointer ${
+                currentAction === 'brush'
+                  ? 'bg-purple-100 border-purple-400 text-purple-950 font-bold ring-2 ring-purple-400/20'
+                  : 'bg-stone-50 border-stone-200 hover:bg-stone-100 text-stone-700'
+              }`}
+            >
+              <span className="text-lg">🪮</span>
+              <div>
+                <div className="text-xs font-black">Brush</div>
+                <div className="text-[10px] text-purple-700">+Coat Luster</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => { setCurrentAction('clean_up'); triggerCareAnimation('clean_up'); }}
+              className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2 cursor-pointer ${
+                currentAction === 'clean_up'
+                  ? 'bg-emerald-100 border-emerald-400 text-emerald-950 font-bold ring-2 ring-emerald-400/20'
+                  : 'bg-stone-50 border-stone-200 hover:bg-stone-100 text-stone-700'
+              }`}
+            >
+              <span className="text-lg">🧹</span>
+              <div>
+                <div className="text-xs font-black">Clean Up</div>
+                <div className="text-[10px] text-emerald-700">+Clean Hocks</div>
               </div>
             </button>
 
             <button
               onClick={() => { setCurrentAction('comfort'); triggerCareAnimation('comfort'); }}
-              className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2 ${
-                currentAction === 'comfort'
-                  ? 'bg-emerald-100 border-emerald-400 text-emerald-950 font-bold ring-2 ring-emerald-400/20'
+              className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2 cursor-pointer ${
+                currentAction === 'comfort' || currentAction === 'fill_with_love'
+                  ? 'bg-rose-100 border-rose-400 text-rose-950 font-bold ring-2 ring-rose-400/20'
                   : 'bg-stone-50 border-stone-200 hover:bg-stone-100 text-stone-700'
               }`}
             >
-              <span className="text-lg">🌿</span>
+              <span className="text-lg">💖</span>
               <div>
-                <div className="text-xs font-black">Soothe &amp; Pet</div>
-                <div className="text-[10px] text-emerald-700">+15% Calm</div>
+                <div className="text-xs font-black">Fill Love</div>
+                <div className="text-[10px] text-rose-700">+Calm Poise</div>
               </div>
             </button>
+          </div>
 
-            <button
-              onClick={() => { setCurrentAction('pose'); triggerCareAnimation('pose'); }}
-              className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2 ${
-                currentAction === 'pose'
-                  ? 'bg-purple-100 border-purple-400 text-purple-950 font-bold ring-2 ring-purple-400/20'
-                  : 'bg-stone-50 border-stone-200 hover:bg-stone-100 text-stone-700'
-              }`}
-            >
-              <span className="text-lg">🪞</span>
-              <div>
-                <div className="text-xs font-black">Practice Pose</div>
-                <div className="text-[10px] text-purple-700">+15% Stance</div>
-              </div>
-            </button>
+          {/* Show Ring Advantage Banner */}
+          <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between text-xs text-amber-950 font-semibold">
+            <span className="flex items-center gap-1.5">
+              <span>🏆</span>
+              <span><strong>Show Ring Advantage:</strong> Daily feeding, watering, grooming, cleaning &amp; love add up to higher judge scores &amp; placement!</span>
+            </span>
           </div>
 
           {/* Done / Continue Button */}
