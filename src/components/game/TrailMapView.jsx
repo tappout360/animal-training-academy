@@ -24,7 +24,8 @@ const NODE_ICON_MAP = {
 export default function TrailMapView({
   trailPack,
   questState,
-  onSelectNode
+  onSelectNode,
+  onEnterShowRing
 }) {
   const completedSet = new Set(questState.completedNodeIds || []);
   const nodes = trailPack.nodes || [];
@@ -182,6 +183,62 @@ export default function TrailMapView({
           })}
         </div>
 
+      </div>
+
+      {/* Grand Fair Pavilion Arrival Card */}
+      {(questState.currentMile >= 85 || completedSet.size >= nodes.length) && (
+        <div className="bg-gradient-to-r from-purple-900 via-indigo-950 to-purple-900 text-white p-5 sm:p-6 rounded-3xl border-2 border-amber-400/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-3.5">
+            <span className="text-3xl p-2.5 bg-purple-800/60 rounded-2xl shadow-inner border border-purple-500/30">🏆</span>
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-amber-300">
+                100-Mile Milestone Reached
+              </div>
+              <h3 className="text-lg font-black text-white">
+                Grand Championship Show Pavilion Open!
+              </h3>
+              <p className="text-xs text-purple-200">
+                Present {trailPack.companion.name} to Judge Miller for official table evaluation, oral standard defense, and your verified certificate.
+              </p>
+            </div>
+          </div>
+
+          {onEnterShowRing && (
+            <button
+              onClick={onEnterShowRing}
+              className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center gap-1.5 shrink-0 hover:scale-105"
+            >
+              <Trophy className="w-4 h-4 text-purple-900" />
+              <span>Enter Judging Ring</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Travelling Animal Caravans on Trail (Visuals) */}
+      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+        <div className="flex items-center gap-2">
+          <span className="text-base">🐾</span>
+          <span className="font-bold text-slate-700">Caravans on Route:</span>
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            <span className="bg-white border border-slate-200 px-2 py-0.5 rounded-full text-[11px] font-semibold text-purple-900 flex items-center gap-1 shadow-2xs">
+              🐰 {trailPack.companion.name} ({trailPack.companion.breed})
+            </span>
+            <span className="bg-white border border-slate-200 px-2 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1">
+              🐑 Hampshire Lamb
+            </span>
+            <span className="bg-white border border-slate-200 px-2 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1">
+              🐐 Nigerian Dwarf
+            </span>
+            <span className="bg-white border border-slate-200 px-2 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1">
+              🐔 Silkie Hen
+            </span>
+          </div>
+        </div>
+        <span className="text-[11px] text-emerald-700 font-semibold">
+          {completedSet.size >= nodes.length ? 'Trail Cleared ✓' : `${nodes.length - completedSet.size} challenges remaining`}
+        </span>
       </div>
 
     </div>

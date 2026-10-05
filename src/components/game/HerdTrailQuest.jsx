@@ -25,6 +25,7 @@ import LivingTrailMap from './livingHerd/LivingTrailMap';
 import DoubleRewardVictory from './livingHerd/DoubleRewardVictory';
 import FamilyBarnBoard from './livingHerd/FamilyBarnBoard';
 import HerdStoryLog from './livingHerd/HerdStoryLog';
+import AnimalCareAnimationModal from './AnimalCareAnimationModal';
 
 import { TRAIL_PACKS, getTrailPackById, getAvailableTrailPacks } from '../../data/game/trailPacks';
 import { TrailQuestEngine } from '../../services/TrailQuestEngine';
@@ -50,6 +51,7 @@ export default function HerdTrailQuest({
   const [celebrationCosmetic, setCelebrationCosmetic] = useState(null);
   const [streakModalData, setStreakModalData] = useState(null);
   const [victoryModalData, setVictoryModalData] = useState(null);
+  const [careModalState, setCareModalState] = useState({ isOpen: false, activeAction: 'brush' });
 
   // Accessibility Toggles
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -196,10 +198,24 @@ export default function HerdTrailQuest({
   };
 
   const handleCareAction = (type) => {
+    setCareModalState({ isOpen: true, activeAction: type });
     const { updatedState, message } = TrailQuestEngine.performTrailCare(questState, type);
     setQuestState(updatedState);
     TrailQuestEngine.saveState(learner.id, updatedState);
     return { message };
+  };
+
+  const handleCompleteTrail = (finalState) => {
+    setQuestState(finalState);
+    TrailQuestEngine.saveState(learner.id, finalState);
+    const award = finalState.earnedRibbons?.[0];
+    LivingHerdEngine.addFamilyBarnPost(learner.id, {
+      authorName: learner.handle || 'CloverChampion42',
+      role: 'youth',
+      badge: award?.placementRank === 1 ? 'Grand Champion' : 'Showmanship Honors',
+      text: `🏆 Completed the ${currentTrailPack?.name || 'Overland Expedition'}! Awarded ${award?.placement || 'Official Ribbon'} with a score of ${award?.totalScore || 95}%!`,
+      likes: 4
+    });
   };
 
   const handleBuyItem = (itemId) => {
@@ -501,6 +517,7 @@ export default function HerdTrailQuest({
             trailPack={currentTrailPack}
             questState={questState}
             onSelectNode={(node) => setActiveNode(node)}
+            onEnterShowRing={() => setActiveTab('showring')}
           />
         </div>
       )}
@@ -521,6 +538,7 @@ export default function HerdTrailQuest({
           questState={questState}
           trailPack={currentTrailPack}
           onSaveAward={handleSaveAward}
+          onCompleteTrail={handleCompleteTrail}
           onReturnToTrail={() => setActiveTab('trail')}
         />
       )}
@@ -663,6 +681,17 @@ export default function HerdTrailQuest({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Animal Care Animation & Milestone Rest Camp Modal */}
+      {careModalState.isOpen && (
+        <AnimalCareAnimationModal
+          isOpen={careModalState.isOpen}
+          onClose={() => setCareModalState({ isOpen: false, activeAction: 'brush' })}
+          companion={currentTrailPack?.companion}
+          activeAction={careModalState.activeAction}
+          conditionScores={questState.showQuality}
+        />
       )}
 
       {/* Frontier Trail Calamity / Hazard Modal */}

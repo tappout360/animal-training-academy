@@ -288,6 +288,8 @@ export const DEFAULT_QUEST_STATE = {
   activeTrailPackId: 'rabbits_trail',
   currentMile: 0,
   completedNodeIds: [],
+  trailCompleted: false,
+  completedTrailPackIds: [],
   trailPoints: 250, // Points earned from answering quizzes accurately
   conditionScore: 95, // Overall 0 - 100
   wagonStatus: {
@@ -369,6 +371,8 @@ export class TrailQuestEngine {
           return {
             ...DEFAULT_QUEST_STATE,
             ...parsed,
+            trailCompleted: parsed.trailCompleted || false,
+            completedTrailPackIds: parsed.completedTrailPackIds || [],
             wagonStatus: { ...DEFAULT_QUEST_STATE.wagonStatus, ...(parsed.wagonStatus || {}) },
             campStatus: { ...DEFAULT_QUEST_STATE.campStatus, ...(parsed.campStatus || {}) }
           };
@@ -790,78 +794,141 @@ export class TrailQuestEngine {
 
   /**
    * Evaluates the Grand Championship Show Ring performance based on
-   * arriving animal condition + showmanship oral exam score.
+   * arriving animal condition + showmanship oral exam score or 3-station scoring.
    */
-  static evaluateShowRing(state, { oralExamScore = 100, exhibitorNotes = '' }) {
-    const quality = state.showQuality || { coatCondition: 85, vigorHydration: 90, temperament: 80, poseTraining: 75 };
-    
-    // Physical Condition Index (50% of total score)
-    const physicalScore = (
-      quality.coatCondition * 0.25 +
-      quality.vigorHydration * 0.25 +
-      quality.temperament * 0.25 +
-      quality.poseTraining * 0.25
-    ) * 0.5;
+  static evaluateShowRing(state, options = {}) {
+    let { oralExamScore, stationScore, handlingScore, judgeQAScore, exhibitorNotes = '' } = options;
 
-    // Showmanship Knowledge & Presentation (50% of total score)
-    const knowledgeScore = (oralExamScore / 100) * 50;
+    let totalScore;
+    let physicalScore = 0;
+    let knowledgeScore = 0;
 
-    // Ring Poise ability bonus if owned
-    const hasRingPoise = (state.purchasedItemIds || []).includes('skill_ring_presence');
-    const bonus = hasRingPoise ? 5 : 0;
-
-    const totalScore = Math.min(100, Math.round(physicalScore + knowledgeScore + bonus));
+    if (stationScore !== undefined && handlingScore !== undefined && judgeQAScore !== undefined) {
+      totalScore = Math.min(100, Math.round(stationScore + handlingScore + judgeQAScore));
+      physicalScore = handlingScore;
+      knowledgeScore = stationScore + judgeQAScore;
+    } else {
+      const exam = oralExamScore !== undefined ? oralExamScore : 100;
+      const quality = state.showQuality || { coatCondition: 85, vigorHydration: 90, temperament: 80, poseTraining: 75 };
+      physicalScore = (
+        quality.coatCondition * 0.25 +
+        quality.vigorHydration * 0.25 +
+        quality.temperament * 0.25 +
+        quality.poseTraining * 0.25
+      ) * 0.5;
+      knowledgeScore = (exam / 100) * 50;
+      const hasRingPoise = (state.purchasedItemIds || []).includes('skill_ring_presence');
+      const bonus = hasRingPoise ? 5 : 0;
+      totalScore = Math.min(100, Math.round(physicalScore + knowledgeScore + bonus));
+    }
 
     let ribbon = 'White Ribbon';
     let ribbonColor = 'text-slate-600 bg-slate-100 border-slate-300';
     let ribbonTitle = 'Participant Honors';
     let ribbonIcon = '🎗️';
+    let placement = 'Participant Distinction · White Ribbon';
+    let placementRank = 6;
+    let competitorField = 'Ranked in Final Showmanship Class';
 
     if (totalScore >= 95) {
       ribbon = 'Grand Champion Purple Rosette';
       ribbonColor = 'text-purple-700 bg-purple-100 border-purple-300';
       ribbonTitle = 'Grand Champion of Show';
       ribbonIcon = '🏆';
+      placement = '1st Place · Best in Show Grand Champion';
+      placementRank = 1;
+      competitorField = 'Ranked 1st of 48 Exhibitors in Division';
     } else if (totalScore >= 90) {
       ribbon = 'Reserve Champion Rosette';
       ribbonColor = 'text-indigo-700 bg-indigo-100 border-indigo-300';
       ribbonTitle = 'Reserve Champion of Show';
       ribbonIcon = '🥈';
+      placement = '2nd Place · Reserve Grand Champion';
+      placementRank = 2;
+      competitorField = 'Ranked 2nd of 48 Exhibitors in Division';
     } else if (totalScore >= 80) {
       ribbon = 'Blue Ribbon (First Class)';
       ribbonColor = 'text-blue-700 bg-blue-100 border-blue-300';
       ribbonTitle = 'Blue Ribbon Showmanship';
       ribbonIcon = '🏅';
+      placement = '3rd Place · Best of Breed (BOB)';
+      placementRank = 3;
+      competitorField = 'Ranked 3rd of 48 Exhibitors in Division';
     } else if (totalScore >= 70) {
       ribbon = 'Red Ribbon (Second Class)';
       ribbonColor = 'text-rose-700 bg-rose-100 border-rose-300';
       ribbonTitle = 'Red Ribbon Exhibitor';
       ribbonIcon = '🎖️';
+      placement = '4th Place · Blue Ribbon Honors';
+      placementRank = 4;
+      competitorField = 'Ranked 4th of 48 Exhibitors in Division';
+    } else if (totalScore >= 60) {
+      placement = '5th Place · Red Ribbon Honors';
+      placementRank = 5;
+      competitorField = 'Ranked 5th of 48 Exhibitors in Division';
     }
+
+    const certYear = new Date().getFullYear();
+    const certCode = Math.random().toString(36).substring(2, 7).toUpperCase();
 
     const awardRecord = {
       id: `award_${Date.now()}`,
+      certificateId: `WW-SHOW-CERT-${certYear}-${certCode}`,
       trailPackId: state.activeTrailPackId,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      isoDate: new Date().toISOString().split('T')[0],
       totalScore,
       physicalScore: Math.round(physicalScore * 2),
       knowledgeScore: Math.round(knowledgeScore * 2),
       ribbon,
       ribbonTitle,
       ribbonIcon,
+      placement,
+      placementRank,
+      competitorField,
+      fairLocation: 'Grand County Fairgrounds & Championship Pavilion, Ring #1',
+      judgeName: 'Judge Margaret Miller',
+      judgeTitle: 'Licensed ARBA & 4-H Master Showmanship Evaluator',
+      superintendentName: 'Dr. Warren Wise, DVM',
+      superintendentTitle: 'Chief Academy Superintendent',
+      sourceStandard: 'Current ARBA Standard of Perfection & 4-H Showmanship Manual',
       judgeFeedback: totalScore >= 90
-        ? 'Superb demonstration of 4-H husbandry! Coat sheen, hydration, and table composure are outstanding. Highly commendable!'
+        ? 'Superb demonstration of 4-H husbandry! Coat sheen, hydration, table composure, and oral standard defense are outstanding. Highly commendable!'
         : 'Good effort across the overland trail! Continue practicing breed standard posing and daily grooming before the next regional convention.'
     };
 
+    const careerLogEntry = {
+      id: `log_${Date.now()}`,
+      type: 'championship_placement',
+      placement,
+      rank: placementRank,
+      score: totalScore,
+      ribbon,
+      date: awardRecord.date,
+      certificateId: awardRecord.certificateId
+    };
+
+    const completedPacks = Array.from(new Set([...(state.completedTrailPackIds || []), state.activeTrailPackId]));
+
     const updated = {
       ...state,
-      earnedRibbons: [awardRecord, ...(state.earnedRibbons || [])]
+      trailCompleted: true,
+      currentMile: 100,
+      completedTrailPackIds: completedPacks,
+      earnedRibbons: [awardRecord, ...(state.earnedRibbons || [])],
+      careerLog: [careerLogEntry, ...(state.careerLog || [])]
     };
 
     return {
       updatedState: updated,
-      awardRecord
+      awardRecord,
+      totalScore,
+      passed: totalScore >= 70,
+      placement,
+      placementRank,
+      competitorField,
+      certificateId: awardRecord.certificateId,
+      ribbon
     };
   }
 

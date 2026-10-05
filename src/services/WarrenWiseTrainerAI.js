@@ -5,6 +5,7 @@
 import { AGE_DIVISIONS, KNOWLEDGE_TIERS, LEGAL_DISCLAIMERS } from '../config/constants.js';
 import { ALL_SPECIES_PACKS } from '../data/speciesPacks/index.js';
 import { db } from '../db/academyDb.js';
+import { PRIMARY_SOURCES, HIGHER_ORDER_ARBA_QUESTIONS, getAccuracyLedgerAuditSummary } from '../data/arbaAccuracyLedger.js';
 
 // Strict medical & veterinary keywords that trigger immediate safety interception
 const MEDICAL_KEYWORDS = [
@@ -83,6 +84,14 @@ export async function askWarrenWiseTrainer({
 
   const moduleContent = matchedModule.ageContent[division] || matchedModule.ageContent.junior;
 
+  // Check if query relates to official ARBA standards/pedigrees/registrar rules
+  const arbaMatch = HIGHER_ORDER_ARBA_QUESTIONS.find(ho => 
+    q.includes('pedigree') || q.includes('registrar') || q.includes('tattoo') || 
+    q.includes('standard') || q.includes('seal') || q.includes('semi-arch') ||
+    q.includes('mandolin') || q.includes('weight') || q.includes('disqualif') ||
+    ho.scenarioPrompt.toLowerCase().includes(q) || ho.question.toLowerCase().includes(q)
+  );
+
   // 3. Construct Age-Responsive Coaching Response
   let response = {
     isSafetyBlocked: false,
@@ -92,6 +101,9 @@ export async function askWarrenWiseTrainer({
     moduleTitle: matchedModule.title,
     headline: moduleContent.headline || `Coaching Tips for ${matchedModule.title}`,
     ageAdaptedAdvice: generateAgeAdaptedTutoring(query, division, matchedModule, pack),
+    primarySourceCitation: arbaMatch ? arbaMatch.sourceCitation : PRIMARY_SOURCES.SOP.title,
+    authoritativeStandard: arbaMatch ? arbaMatch.primarySource : 'Official 4-H & ARBA Curricula',
+    ungroundedLoreRefusal: 'Ungrounded internet forums and blogs are forbidden. Guidance strictly sourced from ARBA Standard of Perfection & Registrar Examination Manual.',
     studyTips: [
       `Review ${matchedModule.title} in the ${pack.species} pack for division ${divConfig.name}.`,
       'Practice step-by-step handling and observation daily in the barn.',
@@ -191,5 +203,37 @@ export function generateCoachProgressSummary({ learnerHandle, ageDivision, compl
     weakTopics,
     coachNote: summary,
     generatedAt: new Date().toLocaleDateString()
+  };
+}
+
+// ARBA Standard-Specific Scenario Remediation
+export function explainMissedArbaScenario({ scenarioId, selectedOptionId }) {
+  const scenario = HIGHER_ORDER_ARBA_QUESTIONS.find(s => s.id === scenarioId) || HIGHER_ORDER_ARBA_QUESTIONS[0];
+  const correctOpt = scenario.options.find(o => o.isCorrect);
+  const selectedOpt = scenario.options.find(o => o.id === selectedOptionId) || scenario.options[0];
+
+  return {
+    scenarioId: scenario.id,
+    category: scenario.category,
+    primarySource: scenario.primarySource,
+    sourceCitation: scenario.sourceCitation,
+    selectedOption: selectedOpt.text,
+    selectedOptionFeedback: selectedOpt.feedback,
+    correctOption: correctOpt.text,
+    correctOptionFeedback: correctOpt.feedback,
+    regulatoryRule: `Under ${scenario.primarySource} (${scenario.sourceCitation}), exact adherence to published specifications is mandatory.`,
+    verifiable: true
+  };
+}
+
+// Direct Primary Source Inquiry Helper
+export function getArbaPrimarySourceGuidance(topicKey) {
+  const audit = getAccuracyLedgerAuditSummary();
+  const source = PRIMARY_SOURCES[topicKey.toUpperCase()] || PRIMARY_SOURCES.SOP;
+  return {
+    source,
+    auditVerification: audit.verificationStatus,
+    governingBodies: audit.governingBodies,
+    strictNoVetDisclaimer: LEGAL_DISCLAIMERS.veterinary
   };
 }

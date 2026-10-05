@@ -49,6 +49,15 @@ import {
   getRabbitDayScript,
   HERD_MEMORY_TEMPLATE
 } from '../src/services/LivingHerdEngine.js';
+import {
+  PRIMARY_SOURCES,
+  HIGHER_ORDER_ARBA_QUESTIONS,
+  getAccuracyLedgerAuditSummary
+} from '../src/data/arbaAccuracyLedger.js';
+import {
+  explainMissedArbaScenario,
+  getArbaPrimarySourceGuidance
+} from '../src/services/WarrenWiseTrainerAI.js';
 
 console.log('🧪 Starting WarrenWise Youth Animal Training Academy Test Suite...\n');
 
@@ -1577,6 +1586,182 @@ test('Insufficient Trail Points blocks repair attempt with informative error mes
   }, /Insufficient Trail Points/);
 });
 
+// ----------------------------------------------------
+// 16. PRIMARY SOURCE ACCURACY LEDGER, RIGOROUS SCENARIOS & TRAIL COMPLETION
+// ----------------------------------------------------
+console.log('\n--- 16. Primary Source Accuracy Ledger, Higher-Order Scenarios & Trail Completion ---');
+
+test('Primary Source Accuracy Ledger defines official ARBA publications with zero prohibited sources', () => {
+  assert.ok(PRIMARY_SOURCES.SOP, 'Must have ARBA Standard of Perfection source');
+  assert.ok(PRIMARY_SOURCES.REGISTRAR_GUIDE, 'Must have ARBA Registrar Study Guide source');
+  assert.ok(PRIMARY_SOURCES.SHOW_RULES, 'Must have ARBA Show Rules source');
+  assert.ok(PRIMARY_SOURCES.RAISING_BETTER, 'Must have Raising Better Rabbits & Cavies source');
+
+  const audit = getAccuracyLedgerAuditSummary();
+  assert.strictEqual(audit.prohibitedSourcesDetected, 0, 'Audit must detect 0 prohibited sources');
+  assert.strictEqual(audit.verificationStatus, '100% VERIFIABLE AGAINST PRIMARY SOURCES');
+  assert.ok(audit.totalPrimarySourceQuestions >= 7, 'Must have at least 7 primary source scenario questions');
+});
+
+test('Higher-order ARBA scenarios enforce rigorous non-recall application with primary citations', () => {
+  assert.ok(HIGHER_ORDER_ARBA_QUESTIONS.length >= 7, 'Must include complete higher-order scenario bank');
+
+  HIGHER_ORDER_ARBA_QUESTIONS.forEach(scenario => {
+    assert.ok(scenario.id, 'Scenario must have unique id');
+    assert.ok(scenario.primarySource, `Scenario ${scenario.id} must cite primary source`);
+    assert.ok(scenario.sourceCitation, `Scenario ${scenario.id} must cite chapter/section`);
+    assert.ok(scenario.scenarioPrompt.length > 30, `Scenario ${scenario.id} prompt must present a concrete situation`);
+    assert.ok(scenario.options.length >= 3, `Scenario ${scenario.id} must have at least 3 options`);
+    
+    const correctOptions = scenario.options.filter(o => o.isCorrect);
+    assert.strictEqual(correctOptions.length, 1, `Scenario ${scenario.id} must have exactly one correct option`);
+
+    scenario.options.forEach(opt => {
+      assert.ok(opt.feedback && opt.feedback.length > 15, `Option ${opt.id} in ${scenario.id} must have educational feedback`);
+      // Zero prescriptive medical dosing
+      const optLower = opt.text.toLowerCase();
+      assert.strictEqual(optLower.includes('give 5ml') || optLower.includes('inject penicillin'), false, 'Cannot prescribe medical dosages');
+    });
+  });
+});
+
+test('Scenario 1: ARBA 3-Generation Pedigree Import rule strictly mandates rejection by registrar', () => {
+  const pedScenario = HIGHER_ORDER_ARBA_QUESTIONS.find(q => q.id === 'arba_ho_01_pedigree_import');
+  assert.ok(pedScenario, 'Pedigree scenario must exist');
+  assert.strictEqual(pedScenario.tier, 'registrar_track');
+  assert.strictEqual(pedScenario.sourceCitation.includes('Registrar’s Study Guide'), true);
+
+  const correct = pedScenario.options.find(o => o.isCorrect);
+  assert.strictEqual(correct.id, 'opt_reject');
+  assert.strictEqual(correct.text.includes('"Import" is never an acceptable substitute'), true);
+});
+
+test('Scenario 2: Semi-Arch (American Mandolin) topline must peak over hips/stifle, not center', () => {
+  const semiArch = HIGHER_ORDER_ARBA_QUESTIONS.find(q => q.id === 'arba_ho_02_semi_arch_topline');
+  assert.ok(semiArch, 'Semi-Arch scenario must exist');
+  
+  const correct = semiArch.options.find(o => o.isCorrect);
+  assert.strictEqual(correct.text.includes('Peaked over Center / Flat on Rump'), true);
+});
+
+test('Scenario 3: ARBA Registrar decimal weight notation "4.8" strictly represents 4 lbs 8 oz', () => {
+  const weightScenario = HIGHER_ORDER_ARBA_QUESTIONS.find(q => q.id === 'arba_ho_03_decimal_weights');
+  assert.ok(weightScenario, 'Weight scenario must exist');
+
+  const correct = weightScenario.options.find(o => o.isCorrect);
+  assert.strictEqual(correct.text.includes('4 Pounds and 8 Ounces'), true);
+  assert.strictEqual(correct.text.includes('ounces, NOT tenths'), true);
+});
+
+test('Scenario 4: ARBA Registration Seal hierarchy differentiates White vs Red vs Red/White/Blue', () => {
+  const sealScenario = HIGHER_ORDER_ARBA_QUESTIONS.find(q => q.id === 'arba_ho_05_seals_distinction');
+  assert.ok(sealScenario, 'Seal scenario must exist');
+
+  const correct = sealScenario.options.find(o => o.isCorrect);
+  assert.strictEqual(correct.text.includes('Red, White & Blue Seal'), true);
+  assert.strictEqual(correct.text.includes('all 14 ancestors'), true);
+});
+
+test('Scenario 5 & 6: Ear tattoo rules require exhibitor ID in Left ear and Right ear strictly for registration', () => {
+  const tattooScenario = HIGHER_ORDER_ARBA_QUESTIONS.find(q => q.id === 'arba_ho_06_ear_tattoo_rules');
+  assert.ok(tattooScenario, 'Tattoo scenario must exist');
+
+  const correct = tattooScenario.options.find(o => o.isCorrect);
+  assert.strictEqual(correct.text.includes('LEFT ear'), true);
+  assert.strictEqual(correct.text.includes('RIGHT ear is strictly reserved for the official ARBA registration tattoo'), true);
+});
+
+test('Scenario 7: Altering coat or plucking disqualifying hairs is fraudulent tampering under Section 28', () => {
+  const tamperScenario = HIGHER_ORDER_ARBA_QUESTIONS.find(q => q.id === 'arba_ho_07_disqualification_tampering');
+  assert.ok(tamperScenario, 'Tampering scenario must exist');
+
+  const correct = tamperScenario.options.find(o => o.isCorrect);
+  assert.strictEqual(correct.text.includes('illegal tampering under Section 28'), true);
+});
+
+testAsync('WarrenWise Trainer AI grounds ARBA inquiries with primary citations and rejects ungrounded lore', async () => {
+  const aiResponse = await askWarrenWiseTrainer({
+    query: 'How do I check an ARBA pedigree for registration and what ear does the tattoo go in?',
+    division: 'senior',
+    speciesId: 'rabbits'
+  });
+
+  assert.strictEqual(aiResponse.isSafetyBlocked, false);
+  assert.ok(aiResponse.primarySourceCitation, 'Must provide primary source citation');
+  assert.ok(aiResponse.ungroundedLoreRefusal, 'Must explicitly refuse ungrounded lore');
+  assert.strictEqual(aiResponse.ungroundedLoreRefusal.includes('Ungrounded internet forums'), true);
+
+  // Missed scenario remediation
+  const remediation = explainMissedArbaScenario({
+    scenarioId: 'arba_ho_01_pedigree_import',
+    selectedOptionId: 'opt_allow_cert'
+  });
+  assert.strictEqual(remediation.verifiable, true);
+  assert.ok(remediation.sourceCitation.includes('Registrar’s Study Guide'));
+  assert.ok(remediation.correctOption.includes('"Import" is never an acceptable substitute'));
+
+  // Direct guidance helper
+  const guide = getArbaPrimarySourceGuidance('REGISTRAR_GUIDE');
+  assert.strictEqual(guide.auditVerification, '100% VERIFIABLE AGAINST PRIMARY SOURCES');
+});
+
+test('Championship Show Ring completes trail, awards judge placement, and issues unique certificate', () => {
+  const preState = {
+    ...TrailQuestEngine.loadState('test_fair_champion_learner'),
+    currentMile: 98,
+    trailCompleted: false,
+    completedTrailPackIds: [],
+    careerLog: []
+  };
+
+  const results = TrailQuestEngine.evaluateShowRing(preState, {
+    stationScore: 30,
+    handlingScore: 35,
+    judgeQAScore: 35
+  });
+
+  // Verification of show ring metrics
+  assert.strictEqual(results.totalScore, 100);
+  assert.strictEqual(results.passed, true);
+  assert.strictEqual(results.placement, '1st Place · Best in Show Grand Champion');
+  assert.strictEqual(results.placementRank, 1);
+  assert.strictEqual(results.competitorField.includes('48'), true);
+  assert.ok(results.certificateId.startsWith('WW-SHOW-CERT-'), 'Must generate official certificate ID');
+
+  // Verification of Trail completion
+  assert.strictEqual(results.updatedState.trailCompleted, true, 'Trail must be completed upon show completion');
+  assert.strictEqual(results.updatedState.currentMile, 100, 'Miles must reach 100 upon completion');
+  assert.strictEqual(results.updatedState.completedTrailPackIds.includes('rabbits_trail'), true);
+
+  // Verification of career log
+  const showLog = results.updatedState.careerLog.find(l => l.type === 'championship_placement');
+  assert.ok(showLog, 'Career log must record championship placement');
+  assert.strictEqual(showLog.placement, '1st Place · Best in Show Grand Champion');
+  assert.strictEqual(showLog.rank, 1);
+});
+
+test('Championship Show Ring awards Reserve Grand Champion and Best of Breed based on points', () => {
+  const state = TrailQuestEngine.loadState('test_placement_tiers');
+
+  // 92 points -> Reserve Grand Champion
+  const resReserve = TrailQuestEngine.evaluateShowRing(state, {
+    stationScore: 28,
+    handlingScore: 32,
+    judgeQAScore: 32
+  });
+  assert.strictEqual(resReserve.placement, '2nd Place · Reserve Grand Champion');
+  assert.strictEqual(resReserve.placementRank, 2);
+
+  // 84 points -> Best of Breed
+  const resBOB = TrailQuestEngine.evaluateShowRing(state, {
+    stationScore: 25,
+    handlingScore: 30,
+    judgeQAScore: 29
+  });
+  assert.strictEqual(resBOB.placement, '3rd Place · Best of Breed (BOB)');
+  assert.strictEqual(resBOB.placementRank, 3);
+});
+
 // Summary
 console.log(`\n========================================`);
 console.log(`Test Results: ${passCount} Passed, ${failCount} Failed`);
@@ -1587,3 +1772,4 @@ if (failCount > 0) {
 } else {
   console.log('🎉 ALL SYSTEM TESTS PASSED SUCCESSFULLY!\n');
 }
+
