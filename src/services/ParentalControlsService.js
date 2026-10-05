@@ -88,7 +88,7 @@ export function getSafeDefaultsByDivision(division = 'junior') {
       return {
         dailyTimeLimitMinutes: 60,
         schedule: {
-          type: 'custom',
+          type: 'always', // Open by default; parents can configure custom rest hours in Parental Controls
           startHour: 6, // 6:00 AM
           endHour: 20, // 8:00 PM
           allowedDays: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']

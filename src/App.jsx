@@ -56,8 +56,8 @@ export default function App() {
   const [featureFlags, setFeatureFlags] = useState(INITIAL_FEATURE_FLAGS);
   const [aiAuditLogs, setAiAuditLogs] = useState([]);
 
-  // Active learner is index 0 (Sammy Miller - CloverChampion42)
-  const currentLearner = learners[0];
+  // Active learner matches active division (Senior -> Jordan Vance, Cloverbud -> Maya Chen, Junior -> Sammy Miller)
+  const currentLearner = learners.find(l => l.ageDivision === activeDivision) || learners[0];
 
   // Permission Gate State
   const [gateTargetRole, setGateTargetRole] = useState(null);
@@ -154,13 +154,15 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Youth Learner Experience */}
         {activeRole === 'youth' && (
-          <YouthSessionGuard learner={currentLearner} activeDivision={activeDivision}>
-            <div className="space-y-6">
-              {/* Age Division Selector Toolbar */}
-              <AgeDivisionSelector
-                selectedDivision={activeDivision}
-                onSelectDivision={setActiveDivision}
-              />
+          <div className="space-y-6">
+            {/* Age Division Selector Toolbar - Always accessible to switch between Cloverbud, Junior, Intermediate, Senior */}
+            <AgeDivisionSelector
+              selectedDivision={activeDivision}
+              onSelectDivision={setActiveDivision}
+            />
+
+            <YouthSessionGuard learner={currentLearner} activeDivision={activeDivision}>
+              <div className="space-y-6">
 
               {/* Drill-down: Active Quiz View */}
               {activeQuizModule ? (
@@ -255,7 +257,8 @@ export default function App() {
               )}
             </div>
           </YouthSessionGuard>
-        )}
+        </div>
+      )}
 
         {/* Parent Guardian Center Experience (Scoped strictly to linked youth) */}
         {activeRole === 'parent' && (

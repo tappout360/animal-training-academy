@@ -131,6 +131,12 @@ export default function YouthSessionGuard({
     }
   };
 
+  // Senior (ages 14-19), Intermediate (12-13), and non-underage accounts are exempt from session curfews
+  const isSeniorOrOlder = activeDivision === 'senior' || activeDivision === 'intermediate' || learner?.ageDivision === 'senior';
+  if (isSeniorOrOlder) {
+    return <>{children}</>;
+  }
+
   // 1. Instant App Freeze Overlay
   if (limits.isAppFrozen) {
     return (
@@ -167,8 +173,8 @@ export default function YouthSessionGuard({
     );
   }
 
-  // 2. Schedule Curfew Overlay
-  if (!scheduleCheck.allowed) {
+  // 2. Schedule Curfew Overlay (only applies when parent explicitly set a custom curfew window)
+  if (limits.schedule?.type === 'custom' && !scheduleCheck.allowed) {
     return (
       <div className="min-h-[500px] flex items-center justify-center p-6 bg-slate-100 rounded-3xl border border-slate-200">
         <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-xl text-center space-y-5 border border-slate-200 animate-fadeIn">
@@ -177,7 +183,7 @@ export default function YouthSessionGuard({
           </div>
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full inline-block mb-1">
-              Scheduled Rest Hours
+              Underage Account Rest Hours
             </span>
             <h2 className="text-xl font-black text-slate-900">Learning Hours Finished</h2>
             <p className="text-xs text-slate-600 mt-2 leading-relaxed">
@@ -185,8 +191,8 @@ export default function YouthSessionGuard({
             </p>
           </div>
 
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] text-slate-500">
-            Animals rest when the sun sets! Have a good night and see you tomorrow.
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-[11px] text-amber-900 font-medium">
+            Scheduled rest hours apply only to young underage accounts (Cloverbud). Senior youth and older accounts are not subject to bedtime curfews.
           </div>
 
           <div className="pt-2 flex flex-col gap-2">
@@ -195,7 +201,7 @@ export default function YouthSessionGuard({
                 setPinAction('extend_30');
                 setIsPinModalOpen(true);
               }}
-              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs"
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
             >
               <KeyRound className="w-3.5 h-3.5" />
               <span>Parent PIN Override (+30m)</span>
