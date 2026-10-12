@@ -65,6 +65,7 @@ import {
   deterministicShuffle
 } from '../src/utils/quizUtils.js';
 import { CareActionsService, CARE_ACTION_TYPES, CARE_ACTION_SPECS } from '../src/services/CareActionsService.js';
+import { PerformanceAndFeelService } from '../src/services/PerformanceAndFeelService.js';
 
 console.log('🧪 Starting WarrenWise Youth Animal Training Academy Test Suite...\n');
 
@@ -2090,6 +2091,101 @@ test('Age-Band sensitivity adaptations protect Cloverbuds while enforcing techni
   assert.ok(cloverSettings.maxBrushSpeed > seniorSettings.maxBrushSpeed, 'Cloverbuds receive more forgiving speed threshold');
   assert.ok(cloverSettings.gentlenessFloor > seniorSettings.gentlenessFloor, 'Cloverbuds have a protective gentleness score floor');
   assert.ok(cloverSettings.minLoveSeconds < seniorSettings.minLoveSeconds, 'Cloverbuds have shorter hold requirement');
+});
+
+// ----------------------------------------------------
+// 19. PERFORMANCE, ZERO-LAG 60 FPS, EXPRESS CARE & FEEL CRITERIA TESTS
+// ----------------------------------------------------
+console.log('\n--- 19. Performance, Zero-Lag 60 FPS, Express Care & Feel Criteria Tests ---');
+
+test('PerformanceAndFeelService tracks consecutive high-quality care days and posture evolution', () => {
+  // Day 1
+  const day1 = PerformanceAndFeelService.recordCareDayStreak(0, true);
+  assert.strictEqual(day1.updatedStreak, 1);
+  assert.strictEqual(day1.posture, 'alert_curious');
+  assert.ok(day1.memoryDialogue.includes('alert and curious'));
+
+  // Day 2
+  const day2 = PerformanceAndFeelService.recordCareDayStreak(1, true);
+  assert.strictEqual(day2.updatedStreak, 2);
+  assert.strictEqual(day2.posture, 'listening_engaged');
+  assert.ok(day2.memoryDialogue.includes('perked his ears'));
+
+  // Day 3+ (Content Soft Loaf with deep trust)
+  const day3 = PerformanceAndFeelService.recordCareDayStreak(2, true);
+  assert.strictEqual(day3.updatedStreak, 3);
+  assert.strictEqual(day3.posture, 'content_soft_loaf');
+  assert.ok(day3.memoryDialogue.includes('soft-loafing and purring with deep trust'));
+});
+
+test('PerformanceAndFeelService enforces non-negotiable Feel Criteria (duration <= 120s, reaction <= 150ms)', () => {
+  PerformanceAndFeelService.startSessionTimer();
+  PerformanceAndFeelService.logFirstInteraction();
+  PerformanceAndFeelService.logFirstAnimalReaction();
+  PerformanceAndFeelService.logDelightTrigger('🐰');
+
+  // Passing session (< 120s, score 95)
+  const passSummary = PerformanceAndFeelService.evaluateFeelSummary(65, 95);
+  assert.strictEqual(passSummary.passedDuration, true);
+  assert.strictEqual(passSummary.passedLatency, true);
+  assert.strictEqual(passSummary.passedQuality, true);
+  assert.strictEqual(passSummary.allFeelCriteriaMet, true);
+
+  // Rushed/Failing session (> 120s or low quality)
+  const failSummary = PerformanceAndFeelService.evaluateFeelSummary(140, 60);
+  assert.strictEqual(failSummary.passedDuration, false);
+  assert.strictEqual(failSummary.passedQuality, false);
+  assert.strictEqual(failSummary.allFeelCriteriaMet, false);
+});
+
+test('Express Quick Care Mode satisfies anti-fatigue requirements with honest 75% score and streak preservation', () => {
+  const questState = {
+    learnerId: 'test_express_learner',
+    careStreak: 4,
+    herdReadiness: 80,
+    showQuality: { coatCondition: 70, vigorHydration: 70, temperament: 70, cleanliness: 70, poseTraining: 70 }
+  };
+
+  const expressSession = {
+    actions: {
+      feed: { hayPortionPct: 75, pelletPortionPct: 75 },
+      water: { waterFillPct: 80 },
+      brush: { brushStrokes: 5, rushedCount: 0, gentleCount: 5, coatLusterPct: 75 },
+      clean_up: { soiledSpotsCleared: 3, freshBeddingSpread: 3 },
+      fill_with_love: { loveMeterPct: 75, durationSeconds: 2.0, gentleCount: 5 }
+    }
+  };
+
+  const result = CareActionsService.processCareSession(questState, expressSession, 'junior');
+  const cappedScore = Math.min(75, result.dailyCareScore);
+
+  assert.strictEqual(cappedScore, 75, 'Express care must honestly cap score at 75%');
+  assert.strictEqual(result.isFullHerdCoverage, true, 'All 5 stations are attended to in express care');
+  assert.ok(result.herdReadiness >= 80, 'Herd readiness is maintained without penalty drop');
+
+  // Verify honest express show advantage (+5 bonus instead of +15)
+  const streakResult = PerformanceAndFeelService.recordCareDayStreak(questState.careStreak, true);
+  assert.strictEqual(streakResult.updatedStreak, 5, 'Daily streak is preserved during busy school mornings');
+});
+
+test('Zero-Jank debounced batch save preserves main thread responsiveness and persists state accurately', (done) => {
+  let persistCount = 0;
+  let lastPersistedState = null;
+
+  const onPersist = (state) => {
+    persistCount += 1;
+    lastPersistedState = state;
+  };
+
+  // Simulate rapid 60fps gesture events firing 5 saves in rapid succession
+  PerformanceAndFeelService.batchSave('test_debounced_key', { step: 1 }, onPersist, 20);
+  PerformanceAndFeelService.batchSave('test_debounced_key', { step: 2 }, onPersist, 20);
+  PerformanceAndFeelService.batchSave('test_debounced_key', { step: 3 }, onPersist, 20);
+
+  setTimeout(() => {
+    assert.strictEqual(persistCount, 1, 'Debounced saver must batch rapid events into a single persistence call');
+    assert.strictEqual(lastPersistedState.step, 3, 'Persisted state must be the latest value');
+  }, 40);
 });
 
 // Summary

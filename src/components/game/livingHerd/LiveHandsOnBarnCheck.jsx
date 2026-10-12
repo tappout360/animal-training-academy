@@ -11,11 +11,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Droplets, Wheat, Sparkles, Heart, CheckCircle2, AlertTriangle, 
   RotateCcw, Award, Star, Trophy, ArrowRight, ShieldCheck, 
-  Volume2, Flame, Shovel, ThumbsUp, Smile
+  Volume2, Flame, Shovel, ThumbsUp, Smile, Zap, Activity, Gauge, Info
 } from 'lucide-react';
 import { soundEffects } from '../../../utils/audioEffects';
 import { TrailQuestEngine } from '../../../services/TrailQuestEngine';
 import { CareActionsService, CARE_ACTION_SPECS } from '../../../services/CareActionsService';
+import { PerformanceAndFeelService } from '../../../services/PerformanceAndFeelService';
 
 export default function LiveHandsOnBarnCheck({
   dailyStatus = {},
@@ -28,6 +29,18 @@ export default function LiveHandsOnBarnCheck({
   const [activeStation, setActiveStation] = useState('feed');
   const [ageDivision, setAgeDivision] = useState('junior'); // 'cloverbud' | 'junior' | 'senior'
   const [liveReadiness, setLiveReadiness] = useState(questState?.herdReadiness || 85);
+
+  // Performance & Feel criteria states
+  const initialStreak = questState?.careStreak || questState?.dailyStreak || 1;
+  const streakInfo = PerformanceAndFeelService.recordCareDayStreak(initialStreak, true);
+  const [consecutiveDays, setConsecutiveDays] = useState(initialStreak);
+  const [companionPosture, setCompanionPosture] = useState(streakInfo.posture);
+  const [memoryGreeting, setMemoryGreeting] = useState(streakInfo.memoryDialogue);
+  const [perfMode, setPerfMode] = useState(PerformanceAndFeelService.isPerformanceMode());
+  const [fpsStats, setFpsStats] = useState({ fps: 60, hitchCount: 0 });
+  const [showFpsHud, setShowFpsHud] = useState(false);
+  const [animalReaction, setAnimalReaction] = useState(null);
+  const [isExpressMode, setIsExpressMode] = useState(false);
 
   // --- 1. Feed Station State ---
   const [hayPortionPct, setHayPortionPct] = useState(0);
@@ -78,11 +91,103 @@ export default function LiveHandsOnBarnCheck({
   const companionName = questState.companionName || 'Barnaby';
   const companionBreed = questState.companionBreed || 'Holland Lop';
 
+  // 60 FPS & feel latency monitoring lifecycle
+  useEffect(() => {
+    PerformanceAndFeelService.startSessionTimer();
+    PerformanceAndFeelService.startMonitoring((stats) => {
+      setFpsStats(stats);
+    });
+    return () => {
+      PerformanceAndFeelService.stopMonitoring();
+    };
+  }, []);
+
+  // Responsive animal reaction helper (trigger latency < 100ms)
+  const triggerAnimalReaction = (text, emoji = '🐰') => {
+    PerformanceAndFeelService.logFirstInteraction();
+    PerformanceAndFeelService.logFirstAnimalReaction();
+    PerformanceAndFeelService.logDelightTrigger(emoji);
+    setAnimalReaction({ text, emoji, timestamp: Date.now() });
+  };
+
+  // Toggle Low-Spec Battery-Saver Performance Mode
+  const handleTogglePerfMode = () => {
+    const next = !perfMode;
+    setPerfMode(next);
+    PerformanceAndFeelService.setPerformanceMode(next);
+    soundEffects.playTap();
+  };
+
+  // Express Quick Care Mode (Anti-Fatigue 15s routine)
+  const handleExecuteExpressCare = () => {
+    soundEffects.playTap();
+    soundEffects.playSuccess();
+    setIsExpressMode(true);
+
+    setCompletedActions({
+      feed: true,
+      water: true,
+      brush: true,
+      clean_up: true,
+      fill_with_love: true
+    });
+    setHayPortionPct(75);
+    setPelletPortionPct(75);
+    setWaterFillPct(80);
+    setCoatLusterPct(75);
+    setSoiledSpotsCleared(3);
+    setFreshBeddingSpread(3);
+    setLoveMeterPct(75);
+    setFeedFinished(true);
+    setWaterFinished(true);
+    setCleanUpFinished(true);
+    setLoveFinished(true);
+
+    const expressResult = CareActionsService.processCareSession(questState, {
+      actions: {
+        feed: { hayPortionPct: 75, pelletPortionPct: 75 },
+        water: { waterFillPct: 80 },
+        brush: { brushStrokes: 5, rushedCount: 0, gentleCount: 5, coatLusterPct: 75 },
+        clean_up: { soiledSpotsCleared: 3, freshBeddingSpread: 3 },
+        fill_with_love: { loveMeterPct: 75, durationSeconds: 2.0, gentleCount: 5 }
+      }
+    }, ageDivision);
+
+    const expressScore = Math.min(75, expressResult.dailyCareScore);
+    setHandlingStyle('express_routine');
+    setSessionScore(expressScore);
+    setLiveReadiness(expressResult.herdReadiness);
+    setActiveStation('summary');
+
+    PerformanceAndFeelService.batchSave(`quest_state_${questState.learnerId || 'current'}`, expressResult.updatedState, (saved) => {
+      TrailQuestEngine.saveState(questState.learnerId || 'current_learner', saved);
+    });
+
+    if (onCareCompleted) {
+      onCareCompleted({
+        score: expressScore,
+        herdReadiness: expressResult.herdReadiness,
+        handlingStyle: 'express_routine',
+        showAdvantage: {
+          tier: 'Honest Caretaker (Express)',
+          bonusPoints: 5,
+          multiplier: 1.05
+        },
+        completedActions: { feed: true, water: true, brush: true, clean_up: true, fill_with_love: true },
+        totalCareDone: 5,
+        showAdvantageBonus: 5,
+        updatedState: expressResult.updatedState,
+        isExpressCare: true
+      });
+    }
+  };
+
   // ==========================================
   // STATION 1: FEED CONTROLS
   // ==========================================
   const handleAddHay = () => {
     soundEffects.playRustle();
+    triggerAnimalReaction('Crunch crunch! Barnaby eagerly munches on the crisp timothy hay!', '🌾');
     setHayPortionPct(prev => {
       const next = Math.min(100, prev + 25);
       if (next >= 75 && pelletPortionPct >= 50 && !feedFinished) {
@@ -177,11 +282,13 @@ export default function LiveHandsOnBarnCheck({
       if (speed > ageSettings.maxBrushSpeed) {
         rushedCount.current += 1;
         setHandlingAlert('Too fast! Rapid brushing pulls undercoat. Slow down to a calm, gentle rhythm.');
+        triggerAnimalReaction('Ears pin back! Brushing too fast pulls sensitive undercoat. Smooth, calm strokes win!', '⚠️');
         soundEffects.playAlert();
       } else {
         gentleCount.current += 1;
         setHandlingAlert(null);
         setBrushStrokes(prev => prev + 1);
+        triggerAnimalReaction('Soft tooth chattering! Silky coat shine glows as loose hairs lift smoothly.', '✨');
         setCoatLusterPct(prev => {
           const next = Math.min(100, prev + 3);
           if (next >= 85 && !completedActions.brush) {
@@ -190,9 +297,11 @@ export default function LiveHandsOnBarnCheck({
           return next;
         });
 
-        // Spawn visual sparkle
-        const newSparkle = { id: Math.random(), x, y };
-        setBrushSparkles(prev => [...prev.slice(-6), newSparkle]);
+        // Spawn visual sparkle (capped in Performance Mode)
+        if (!perfMode) {
+          const newSparkle = { id: Math.random(), x, y };
+          setBrushSparkles(prev => [...prev.slice(-6), newSparkle]);
+        }
 
         if (brushStrokes % 5 === 0) {
           soundEffects.playGroom();
@@ -208,6 +317,7 @@ export default function LiveHandsOnBarnCheck({
   // ==========================================
   const handleScoopSoiled = () => {
     soundEffects.playRustle();
+    triggerAnimalReaction('Clean quarters! Soiled spot scooped safely into the compost bucket.', '🧹');
     setSoiledSpotsCleared(prev => {
       const next = Math.min(3, prev + 1);
       if (next === 3 && freshBeddingSpread >= 3 && !cleanUpFinished) {
@@ -221,6 +331,7 @@ export default function LiveHandsOnBarnCheck({
 
   const handleSpreadBedding = () => {
     soundEffects.playRustle();
+    triggerAnimalReaction('Soft dry pine shavings fluffed up! Eliminates moisture and prevents sore hocks.', '🌲');
     setFreshBeddingSpread(prev => {
       const next = Math.min(3, prev + 1);
       if (soiledSpotsCleared >= 3 && next === 3 && !cleanUpFinished) {
@@ -239,6 +350,7 @@ export default function LiveHandsOnBarnCheck({
     if (loveFinished) return;
     setIsLoving(true);
     soundEffects.playPurr();
+    triggerAnimalReaction('Purr... Barnaby drops into a peaceful soft loaf under your gentle touch!', '💖');
 
     const rect = e?.currentTarget?.getBoundingClientRect();
     const x = rect ? rect.width / 2 + (Math.random() * 60 - 30) : 100;
@@ -256,11 +368,13 @@ export default function LiveHandsOnBarnCheck({
         return next;
       });
 
-      // Spawn floating hearts
-      setLoveHearts(prev => [
-        ...prev.slice(-8), 
-        { id: Math.random(), x: x + (Math.random() * 40 - 20), y: y - Math.random() * 30 }
-      ]);
+      // Spawn floating hearts (capped in Performance Mode)
+      if (!perfMode) {
+        setLoveHearts(prev => [
+          ...prev.slice(-6), 
+          { id: Math.random(), x: x + (Math.random() * 40 - 20), y: y - Math.random() * 30 }
+        ]);
+      }
     }, 70);
   };
 
@@ -346,7 +460,33 @@ export default function LiveHandsOnBarnCheck({
             Every care action directly drives placement & Judge Miller's championship scorecard!
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Express Quick Care button (Anti-Fatigue) */}
+          <button
+            onClick={handleExecuteExpressCare}
+            className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 rounded-full font-bold text-[11px] transition shadow-sm active:scale-95 cursor-pointer"
+            title="In a hurry? Complete daily care in 15 seconds (honest 75% score, preserves streak!)"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+            <span>Express Morning Check (15s)</span>
+          </button>
+
+          {/* 60 FPS / Battery-Saver Performance Mode Toggle */}
+          <button
+            onClick={handleTogglePerfMode}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
+              perfMode ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' : 'bg-slate-800 text-slate-400 border-slate-700'
+            }`}
+            title="Optimizes framerate on lower-end devices by limiting heavy DOM particles"
+          >
+            <Gauge className="w-3 h-3" />
+            <span>{perfMode ? '⚡ 60 FPS Mode' : 'Standard FX'}</span>
+          </button>
+
+          <span className="text-[10px] text-slate-400 bg-slate-950/70 border border-slate-800 px-2 py-0.5 rounded-full font-mono">
+            {fpsStats.fps} FPS
+          </span>
+
           <span className="text-[11px] bg-purple-500/20 text-purple-300 border border-purple-400/40 px-2.5 py-0.5 rounded-full font-black">
             ✨ {liveReadiness}% Herd Readiness
           </span>
@@ -414,6 +554,45 @@ export default function LiveHandsOnBarnCheck({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Living Herd Posture, Memory & Responsive Reaction Bar */}
+      <div className="bg-slate-950/90 border-b border-slate-800/80 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-purple-500/20 border border-amber-500/30 flex items-center justify-center text-xl shadow-inner shrink-0">
+            {companionPosture === 'content_soft_loaf' ? '🍞' : companionPosture === 'listening_engaged' ? '👂' : '🐰'}
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-black text-white">
+                {companionName}'s Posture:
+              </span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold border ${
+                companionPosture === 'content_soft_loaf'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : companionPosture === 'listening_engaged'
+                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                  : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+              }`}>
+                {companionPosture === 'content_soft_loaf' ? 'Soft Loaf (Deep Trust)' : companionPosture === 'listening_engaged' ? 'Listening & Engaged' : 'Alert & Curious'}
+              </span>
+              <span className="text-[10px] text-amber-400 font-bold bg-amber-950/50 border border-amber-800/50 px-2 py-0.5 rounded-full">
+                🔥 Day {consecutiveDays} Stewardship Streak
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 mt-0.5 italic">
+              "{memoryGreeting}"
+            </p>
+          </div>
+        </div>
+
+        {/* Immediate animal reaction toast (< 100ms feedback) */}
+        {animalReaction && (
+          <div className="animate-bounce bg-amber-500/20 border border-amber-400/50 text-amber-200 px-3 py-1 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-lg">
+            <span className="text-base">{animalReaction.emoji}</span>
+            <span>{animalReaction.text}</span>
+          </div>
+        )}
       </div>
 
       {/* Main Interactive Work Area */}
@@ -823,6 +1002,31 @@ export default function LiveHandsOnBarnCheck({
 
               <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-[11px] text-amber-200 font-medium text-center">
                 ⭐ <strong>Judge's Note:</strong> Exhibitors with consistent pet care records receive top placement consideration and Grand Champion Rosette eligibility!
+              </div>
+            </div>
+
+            {/* Master Stewardship Causal Chain Card */}
+            <div className="max-w-md mx-auto bg-gradient-to-r from-slate-900 to-indigo-950/60 border border-indigo-500/30 rounded-3xl p-4 space-y-2 shadow-lg">
+              <div className="flex items-center gap-2 text-indigo-300 font-extrabold text-xs">
+                <Award className="w-4 h-4 text-amber-400" />
+                <span>Master Stewardship Causal Chain</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+                <div className="bg-slate-950/80 p-2 rounded-2xl border border-slate-800">
+                  <div className="text-base mb-1">🤲</div>
+                  <div className="font-bold text-white">1. Daily Care</div>
+                  <div className="text-slate-400">Gentle touch & clean stall</div>
+                </div>
+                <div className="bg-slate-950/80 p-2 rounded-2xl border border-slate-800">
+                  <div className="text-base mb-1">🍞</div>
+                  <div className="font-bold text-white">2. Herd Trust</div>
+                  <div className="text-slate-400">Soft-loaf posture & zero stress</div>
+                </div>
+                <div className="bg-slate-950/80 p-2 rounded-2xl border border-indigo-500/40">
+                  <div className="text-base mb-1">🏆</div>
+                  <div className="font-bold text-amber-300">3. Fair Rosette</div>
+                  <div className="text-slate-400">Judge Miller's +15 Pt boost</div>
+                </div>
               </div>
             </div>
 
