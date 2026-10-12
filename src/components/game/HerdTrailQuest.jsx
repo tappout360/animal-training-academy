@@ -26,6 +26,7 @@ import DoubleRewardVictory from './livingHerd/DoubleRewardVictory';
 import FamilyBarnBoard from './livingHerd/FamilyBarnBoard';
 import HerdStoryLog from './livingHerd/HerdStoryLog';
 import AnimalCareAnimationModal from './AnimalCareAnimationModal';
+import LiveTrailActionGame from './LiveTrailActionGame';
 
 import { TRAIL_PACKS, getTrailPackById, getAvailableTrailPacks } from '../../data/game/trailPacks';
 import { TrailQuestEngine } from '../../services/TrailQuestEngine';
@@ -44,6 +45,7 @@ export default function HerdTrailQuest({
   
   // Game starts on Morning Barn Check (Living Herd First!)
   const [activeTab, setActiveTab] = useState('morning'); // 'morning' | 'trail' | 'outfitter' | 'showring' | 'family' | 'story' | 'overworld' | 'locker' | 'habitat'
+  const [trailMode, setTrailMode] = useState('live_drive'); // 'live_drive' | 'milestone_map'
   const [outfitterCategory, setOutfitterCategory] = useState('all');
   const [activeNode, setActiveNode] = useState(null);
   const [activeHazard, setActiveHazard] = useState(null);
@@ -268,6 +270,7 @@ export default function HerdTrailQuest({
   };
 
   const streakCount = questState.dailyStreak?.count || 1;
+  const isShowRingUnlocked = (questState.currentMile || 0) >= 100 || questState.trailCompleted;
 
   return (
     <div className={`max-w-7xl mx-auto space-y-6 ${highContrast ? 'contrast-125' : ''} ${reducedMotion ? 'motion-reduce' : ''}`}>
@@ -324,7 +327,7 @@ export default function HerdTrailQuest({
           {/* 1. Morning Barn Check (Living Herd Default) */}
           <button
             onClick={() => { soundEffects.playTap(); setActiveTab('morning'); }}
-            className={`px-3.5 py-2 rounded-2xl text-xs font-black flex items-center gap-1.5 transition ${
+            className={`px-3.5 py-2 rounded-2xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer ${
               activeTab === 'morning'
                 ? 'bg-amber-500 text-slate-950 shadow-xs ring-2 ring-amber-400/40'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -334,23 +337,23 @@ export default function HerdTrailQuest({
             <span>Morning Barn Check</span>
           </button>
 
-          {/* 2. Living Trail Map */}
+          {/* 2. Living Trail Movement */}
           <button
             onClick={() => { soundEffects.playTap(); setActiveTab('trail'); }}
-            className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition ${
+            className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
               activeTab === 'trail'
                 ? 'bg-emerald-700 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <Map className="w-4 h-4" />
-            <span>Trail Caravan</span>
+            <span>🚜</span>
+            <span>Trail Movement</span>
           </button>
 
           {/* 3. Trading Post */}
           <button
             onClick={() => { soundEffects.playTap(); setActiveTab('outfitter'); }}
-            className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition ${
+            className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
               activeTab === 'outfitter'
                 ? 'bg-amber-600 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -363,17 +366,28 @@ export default function HerdTrailQuest({
             </span>
           </button>
 
-          {/* 4. Grand Show Ring */}
+          {/* 4. Grand Show Ring (Unlocked only at end of trail!) */}
           <button
             onClick={() => { soundEffects.playTap(); setActiveTab('showring'); }}
-            className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition ${
+            className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
               activeTab === 'showring'
                 ? 'bg-purple-700 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100'
+                : isShowRingUnlocked
+                  ? 'text-purple-700 bg-purple-50 hover:bg-purple-100 font-black border border-purple-300'
+                  : 'text-slate-500 hover:bg-slate-100'
             }`}
           >
-            <Trophy className="w-4 h-4" />
+            {isShowRingUnlocked ? <Trophy className="w-4 h-4 text-amber-400" /> : <Lock className="w-3.5 h-3.5 text-slate-400" />}
             <span>Grand Show Ring</span>
+            {!isShowRingUnlocked ? (
+              <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-bold">
+                Mile 100
+              </span>
+            ) : (
+              <span className="text-[10px] bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full font-black animate-pulse">
+                OPEN!
+              </span>
+            )}
           </button>
 
           {/* 5. Family Barn Board */}
@@ -479,46 +493,100 @@ export default function HerdTrailQuest({
         </div>
       )}
 
-      {/* Screen 2: Living Trail Map & Visual Caravan (Mockup 1 Right Pane) */}
+      {/* Screen 2: Living Trail Movement & Overland Drive */}
       {activeTab === 'trail' && (
         <div className="space-y-6">
-          {/* Oregon Trail Adventure Overworld Viewport */}
-          <LivingTrailMap
-            questState={questState}
-            trailPack={currentTrailPack}
-            dailyStatus={dailyStatus}
-            onSelectNode={(node) => setActiveNode(node)}
-            onOpenMorningCheck={() => setActiveTab('morning')}
-            onOpenShowRing={() => setActiveTab('showring')}
-            onOpenFamilyBoard={() => setActiveTab('family')}
-            onOpenOutfitter={handleOpenOutfitter}
-          />
+          {/* Trail Mode Switcher: Live Driving vs Milestone Map */}
+          <div className="flex items-center justify-between p-1.5 bg-slate-900 border border-slate-800 rounded-2xl gap-2 shadow-sm text-white">
+            <button
+              onClick={() => {
+                soundEffects.playTap();
+                setTrailMode('live_drive');
+              }}
+              className={`flex-1 py-2.5 px-3 rounded-xl font-black text-xs transition flex items-center justify-center gap-2 cursor-pointer ${
+                trailMode === 'live_drive'
+                  ? 'bg-amber-500 text-slate-950 shadow-md'
+                  : 'text-slate-300 hover:bg-slate-800'
+              }`}
+            >
+              <span>🚜</span>
+              <span>Live Overland Drive (Real Movement Gameplay)</span>
+              <span className="text-[10px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full font-bold">
+                Playable Action!
+              </span>
+            </button>
 
-          {/* Animated Wagon Trail Visual Viewport */}
-          <VisualWagonTrailViewport
-            questState={questState}
-            trailPack={currentTrailPack}
-            onCareAction={handleCareAction}
-            onOpenOutfitter={handleOpenOutfitter}
-            onEnterShowRing={() => setActiveTab('showring')}
-            onAskMentor={() => onOpenAiTrainer?.()}
-          />
+            <button
+              onClick={() => {
+                soundEffects.playTap();
+                setTrailMode('milestone_map');
+              }}
+              className={`flex-1 py-2.5 px-3 rounded-xl font-black text-xs transition flex items-center justify-center gap-2 cursor-pointer ${
+                trailMode === 'milestone_map'
+                  ? 'bg-amber-500 text-slate-950 shadow-md'
+                  : 'text-slate-300 hover:bg-slate-800'
+              }`}
+            >
+              <span>🗺️</span>
+              <span>Topographic Milestone Map &amp; Caravan</span>
+            </button>
+          </div>
 
-          {/* Party Condition & Supplies HUD */}
-          <PartyConditionCard
-            questState={questState}
-            trailPack={currentTrailPack}
-            onOpenCosmetics={() => setActiveTab('locker')}
-            onOpenHabitat={() => setActiveTab('habitat')}
-          />
+          {trailMode === 'live_drive' ? (
+            <LiveTrailActionGame
+              questState={questState}
+              trailPack={currentTrailPack}
+              onUpdateQuestState={(updated) => {
+                setQuestState(updated);
+              }}
+              onEnterShowRing={() => {
+                soundEffects.playVictoryFanfare();
+                setActiveTab('showring');
+              }}
+              onOpenCareModal={(action) => setCareModalState({ isOpen: true, activeAction: action })}
+              onBackToMap={() => setTrailMode('milestone_map')}
+            />
+          ) : (
+            <>
+              {/* Oregon Trail Adventure Overworld Viewport */}
+              <LivingTrailMap
+                questState={questState}
+                trailPack={currentTrailPack}
+                dailyStatus={dailyStatus}
+                onSelectNode={(node) => setActiveNode(node)}
+                onOpenMorningCheck={() => setActiveTab('morning')}
+                onOpenShowRing={() => setActiveTab('showring')}
+                onOpenFamilyBoard={() => setActiveTab('family')}
+                onOpenOutfitter={handleOpenOutfitter}
+              />
 
-          {/* Detailed Topographic Trail Map */}
-          <TrailMapView
-            trailPack={currentTrailPack}
-            questState={questState}
-            onSelectNode={(node) => setActiveNode(node)}
-            onEnterShowRing={() => setActiveTab('showring')}
-          />
+              {/* Animated Wagon Trail Visual Viewport */}
+              <VisualWagonTrailViewport
+                questState={questState}
+                trailPack={currentTrailPack}
+                onCareAction={handleCareAction}
+                onOpenOutfitter={handleOpenOutfitter}
+                onEnterShowRing={() => setActiveTab('showring')}
+                onAskMentor={() => onOpenAiTrainer?.()}
+              />
+
+              {/* Party Condition & Supplies HUD */}
+              <PartyConditionCard
+                questState={questState}
+                trailPack={currentTrailPack}
+                onOpenCosmetics={() => setActiveTab('locker')}
+                onOpenHabitat={() => setActiveTab('habitat')}
+              />
+
+              {/* Detailed Topographic Trail Map */}
+              <TrailMapView
+                trailPack={currentTrailPack}
+                questState={questState}
+                onSelectNode={(node) => setActiveNode(node)}
+                onEnterShowRing={() => setActiveTab('showring')}
+              />
+            </>
+          )}
         </div>
       )}
 
@@ -532,15 +600,78 @@ export default function HerdTrailQuest({
         />
       )}
 
-      {/* Screen 4: Championship Show Ring */}
+      {/* Screen 4: Championship Show Ring (Locked until end of trail!) */}
       {activeTab === 'showring' && (
-        <ChampionshipShowRing
-          questState={questState}
-          trailPack={currentTrailPack}
-          onSaveAward={handleSaveAward}
-          onCompleteTrail={handleCompleteTrail}
-          onReturnToTrail={() => setActiveTab('trail')}
-        />
+        <>
+          {!isShowRingUnlocked ? (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 text-center max-w-2xl mx-auto space-y-6 shadow-2xl">
+              <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border-2 border-amber-500/30 text-amber-400 flex items-center justify-center text-4xl mx-auto shadow-inner">
+                <Lock className="w-10 h-10 text-amber-400" />
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-xs uppercase tracking-widest text-amber-400 font-black bg-amber-950/80 border border-amber-500/40 px-3 py-1 rounded-full">
+                  Fair Pavilion Gates Locked
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black text-white">
+                  Reach the End of the Trail to Enter Judging!
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+                  The Grand Championship Show Ring is held at the destination fairgrounds. Only when you drive your wagon to the end of the trail (Mile 100) do you enter the judging show, where Judge Margaret Miller inspects your animal, scores your journey and pet care, awards rosettes and places, and presents your official certificate!
+                </p>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 max-w-md mx-auto">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-slate-400">Current Trail Journey:</span>
+                  <span className="text-amber-400">{questState.currentMile || 0} / 100 Miles</span>
+                </div>
+                <div className="w-full bg-slate-800 h-3.5 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-emerald-500 via-amber-400 to-amber-500 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(5, questState.currentMile || 0))}%` }}
+                  />
+                </div>
+                <div className="text-[11px] text-slate-400 italic">
+                  {Math.max(0, 100 - (questState.currentMile || 0))} miles remaining to reach the Championship Pavilion Arena.
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => {
+                    soundEffects.playTap();
+                    setTrailMode('live_drive');
+                    setActiveTab('trail');
+                  }}
+                  className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-slate-950 font-black text-sm rounded-2xl shadow-xl flex items-center justify-center gap-2 cursor-pointer transition hover:scale-105"
+                >
+                  <span>🚜 Drive Overland Trail Now (Live Action)</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundEffects.playTap();
+                    setActiveTab('morning');
+                  }}
+                  className="w-full sm:w-auto px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-2xl transition cursor-pointer"
+                >
+                  <span>Care for Companion in Barn</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <ChampionshipShowRing
+              questState={questState}
+              trailPack={currentTrailPack}
+              onSaveAward={handleSaveAward}
+              onCompleteTrail={handleCompleteTrail}
+              onReturnToTrail={() => setActiveTab('trail')}
+            />
+          )}
+        </>
       )}
 
       {/* Screen 5: Family Barn Board */}

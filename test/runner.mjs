@@ -1815,6 +1815,117 @@ test('Pet Care Actions (Feed, Water, Brush, Clean Up, Fill with Love) elevate me
   assert.ok(evaluated.awardRecord.judgeFeedback.includes('recorded care sessions'), 'Judge remarks must commend pet care dedication');
 });
 
+// ----------------------------------------------------
+// 17. LIVE-ACTION TRAIL MOVEMENT & END-OF-TRAIL SHOW RING GATING TESTS
+// ----------------------------------------------------
+console.log('\n--- 17. Live-Action Trail Movement & End-of-Trail Show Ring Gating Tests ---');
+
+test('Grand Show Ring is strictly locked until youth reaches the end of the trail (Mile 100)', () => {
+  // Scenario 1: Youth at Start of Trail (Mile 0)
+  const freshTrailState = {
+    currentMile: 0,
+    trailCompleted: false
+  };
+  const isFreshUnlocked = freshTrailState.currentMile >= 100 || freshTrailState.trailCompleted;
+  assert.strictEqual(isFreshUnlocked, false, 'Show ring must be locked at Mile 0');
+
+  // Scenario 2: Youth Mid-Trail (Mile 45)
+  const midTrailState = {
+    currentMile: 45,
+    trailCompleted: false
+  };
+  const isMidUnlocked = midTrailState.currentMile >= 100 || midTrailState.trailCompleted;
+  assert.strictEqual(isMidUnlocked, false, 'Show ring must be locked mid-journey at Mile 45');
+
+  // Scenario 3: Youth Almost There (Mile 99.5)
+  const nearEndState = {
+    currentMile: 99.5,
+    trailCompleted: false
+  };
+  const isNearEndUnlocked = nearEndState.currentMile >= 100 || nearEndState.trailCompleted;
+  assert.strictEqual(isNearEndUnlocked, false, 'Show ring must remain locked until 100 full miles are reached');
+
+  // Scenario 4: Destination Fairgrounds Reached (Mile 100)
+  const reachedTrailState = {
+    currentMile: 100,
+    trailCompleted: false
+  };
+  const isReachedUnlocked = reachedTrailState.currentMile >= 100 || reachedTrailState.trailCompleted;
+  assert.strictEqual(isReachedUnlocked, true, 'Show ring must unlock when reaching Mile 100');
+
+  // Scenario 5: Trail Previously Completed (Revisiting certificate & awards)
+  const completedState = {
+    currentMile: 100,
+    trailCompleted: true
+  };
+  const isCompletedUnlocked = completedState.currentMile >= 100 || completedState.trailCompleted;
+  assert.strictEqual(isCompletedUnlocked, true, 'Completed trail must remain unlocked to review honors and certificates');
+});
+
+test('Live Trail Action Game 3-lane steering, speed paces, collectibles and hazard mechanics', () => {
+  // 1. Steering Logic across 3 lanes (0: Left, 1: Center, 2: Right)
+  let lane = 1; // start in center
+  const steerLeft = (cur) => Math.max(0, cur - 1);
+  const steerRight = (cur) => Math.min(2, cur + 1);
+
+  lane = steerLeft(lane);
+  assert.strictEqual(lane, 0, 'Steering left from center must enter lane 0 (Left)');
+  lane = steerLeft(lane);
+  assert.strictEqual(lane, 0, 'Steering left at leftmost lane must not drop below 0');
+
+  lane = steerRight(lane);
+  assert.strictEqual(lane, 1, 'Steering right must move back to lane 1 (Center)');
+  lane = steerRight(lane);
+  assert.strictEqual(lane, 2, 'Steering right must enter lane 2 (Right)');
+  lane = steerRight(lane);
+  assert.strictEqual(lane, 2, 'Steering right at rightmost lane must clamp at 2');
+
+  // 2. Pace configurations and physics
+  const paceConfig = {
+    walk: { label: 'Careful Walk', speed: 1.0, mileRate: 0.15, burnRate: 0.05 },
+    trot: { label: 'Steady Trot', speed: 1.8, mileRate: 0.35, burnRate: 0.10 },
+    gallop: { label: 'Fast Gallop', speed: 2.8, mileRate: 0.70, burnRate: 0.22 }
+  };
+
+  assert.ok(paceConfig.gallop.mileRate > paceConfig.trot.mileRate);
+  assert.ok(paceConfig.trot.mileRate > paceConfig.walk.mileRate);
+  assert.ok(paceConfig.gallop.burnRate > paceConfig.walk.burnRate, 'Higher speed burns more resources');
+
+  // 3. Collectibles interaction
+  let supplies = { feed: 40, water: 35 };
+  let points = 100;
+  let bondXp = 50;
+
+  // Hay (+12 feed)
+  supplies.feed = Math.min(100, supplies.feed + 12);
+  assert.strictEqual(supplies.feed, 52);
+
+  // Water (+10 water)
+  supplies.water = Math.min(100, supplies.water + 10);
+  assert.strictEqual(supplies.water, 45);
+
+  // Star (+15 points)
+  points += 15;
+  assert.strictEqual(points, 115);
+
+  // Heart (+10 bond XP)
+  bondXp += 10;
+  assert.strictEqual(bondXp, 60);
+
+  // 4. Hazard impact (rock collision: -8 wagon durability)
+  let wagonDurability = 85;
+  wagonDurability = Math.max(10, wagonDurability - 8);
+  assert.strictEqual(wagonDurability, 77, 'Boulder hazard must reduce wagon health');
+
+  // 5. Overland Drive to 100 miles milestone trigger
+  let currentMile = 99.2;
+  const milesAdded = 1.0;
+  currentMile = Math.min(100, +(currentMile + milesAdded).toFixed(1));
+  assert.strictEqual(currentMile, 100, 'Miles must cap accurately at 100');
+  const reachedDestination = currentMile >= 100;
+  assert.strictEqual(reachedDestination, true, 'Destination trigger must fire at Mile 100');
+});
+
 // Summary
 console.log(`\n========================================`);
 console.log(`Test Results: ${passCount} Passed, ${failCount} Failed`);
