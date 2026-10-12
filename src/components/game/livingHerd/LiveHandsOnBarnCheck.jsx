@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { soundEffects } from '../../../utils/audioEffects';
 import { TrailQuestEngine } from '../../../services/TrailQuestEngine';
+import { CareActionsService, CARE_ACTION_SPECS } from '../../../services/CareActionsService';
 
 export default function LiveHandsOnBarnCheck({
   dailyStatus = {},
@@ -25,6 +26,8 @@ export default function LiveHandsOnBarnCheck({
 }) {
   // Active care station: 'feed' | 'water' | 'brush' | 'clean_up' | 'fill_with_love' | 'summary'
   const [activeStation, setActiveStation] = useState('feed');
+  const [ageDivision, setAgeDivision] = useState('junior'); // 'cloverbud' | 'junior' | 'senior'
+  const [liveReadiness, setLiveReadiness] = useState(questState?.herdReadiness || 85);
 
   // --- 1. Feed Station State ---
   const [hayPortionPct, setHayPortionPct] = useState(0);
@@ -169,8 +172,9 @@ export default function LiveHandsOnBarnCheck({
 
     if (dt > 40 && dist > 15) {
       const speed = dist / dt;
+      const ageSettings = CareActionsService.getAgeBandSettings(ageDivision);
 
-      if (speed > 1.8) {
+      if (speed > ageSettings.maxBrushSpeed) {
         rushedCount.current += 1;
         setHandlingAlert('Too fast! Rapid brushing pulls undercoat. Slow down to a calm, gentle rhythm.');
         soundEffects.playAlert();
@@ -293,23 +297,37 @@ export default function LiveHandsOnBarnCheck({
   const handleFinishAllCare = () => {
     soundEffects.playVictory();
 
-    const style = rushedCount.current > gentleCount.current / 2
-      ? 'hurried_handler'
-      : gentleCount.current > 15
-        ? 'gentle_master'
-        : 'thorough_steward';
+    const sessionResult = CareActionsService.processCareSession(questState, {
+      actions: {
+        feed: completedActions.feed ? { hayPortionPct, pelletPortionPct } : null,
+        water: completedActions.water ? { waterFillPct } : null,
+        brush: completedActions.brush ? { brushStrokes, rushedCount: rushedCount.current, gentleCount: gentleCount.current, coatLusterPct } : null,
+        clean_up: completedActions.clean_up ? { soiledSpotsCleared, freshBeddingSpread } : null,
+        fill_with_love: completedActions.fill_with_love ? { loveMeterPct, durationSeconds: 3.5, gentleCount: gentleCount.current } : null,
+        nail_check: completedActions.nail_check ? { completed: true } : null,
+        ear_eye_check: completedActions.ear_eye_check ? { completed: true } : null,
+        pose_practice: completedActions.pose_practice ? { completed: true } : null
+      }
+    }, ageDivision);
 
-    setHandlingStyle(style);
-    setSessionScore(100);
+    setHandlingStyle(sessionResult.handlingStyle);
+    setSessionScore(sessionResult.dailyCareScore);
+    setLiveReadiness(sessionResult.herdReadiness);
     setActiveStation('summary');
+
+    // Persist immediately in local storage / engine
+    TrailQuestEngine.saveState(questState.learnerId || 'current_learner', sessionResult.updatedState);
 
     if (onCareCompleted) {
       onCareCompleted({
-        score: 100,
-        handlingStyle: style,
+        score: sessionResult.dailyCareScore,
+        herdReadiness: sessionResult.herdReadiness,
+        handlingStyle: sessionResult.handlingStyle,
+        showAdvantage: sessionResult.showAdvantage,
         completedActions,
         totalCareDone: completedCount,
-        showAdvantageBonus: 15
+        showAdvantageBonus: sessionResult.showAdvantage.bonusPoints,
+        updatedState: sessionResult.updatedState
       });
     }
   };
@@ -317,7 +335,7 @@ export default function LiveHandsOnBarnCheck({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl text-slate-100 flex flex-col">
       
-      {/* Top Banner: Show Ring Advantage Guarantee */}
+      {/* Top Banner: Show Ring Advantage Guarantee & Live Herd Readiness */}
       <div className="bg-gradient-to-r from-amber-950 via-slate-900 to-amber-950 border-b border-amber-500/30 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Trophy className="w-4 h-4 text-amber-400" />
@@ -325,10 +343,13 @@ export default function LiveHandsOnBarnCheck({
             Pet Care Show Advantage:
           </span>
           <span className="text-xs font-bold text-slate-200">
-            Every care action directly improves your score & placement in the Championship Ring!
+            Every care action directly drives placement & Judge Miller's championship scorecard!
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <span className="text-[11px] bg-purple-500/20 text-purple-300 border border-purple-400/40 px-2.5 py-0.5 rounded-full font-black">
+            ✨ {liveReadiness}% Herd Readiness
+          </span>
           <span className="text-[11px] bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2.5 py-0.5 rounded-full font-black">
             +{completedCount * 3} Pts Show Bonus (Max +15)
           </span>
@@ -347,6 +368,22 @@ export default function LiveHandsOnBarnCheck({
           <p className="text-[11px] text-slate-400">
             Care for <strong>{companionName}</strong> ({companionBreed}) with real hands-on gestures
           </p>
+        </div>
+
+        {/* Age Band Sensitivity Selector */}
+        <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[10px]">
+          <span className="text-slate-400 font-bold px-1">Track:</span>
+          {['cloverbud', 'junior', 'senior'].map(div => (
+            <button
+              key={div}
+              onClick={() => setAgeDivision(div)}
+              className={`px-2 py-0.5 rounded-lg font-bold capitalize transition cursor-pointer ${
+                ageDivision === div ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {div}
+            </button>
+          ))}
         </div>
 
         {/* 5 Action Tabs */}

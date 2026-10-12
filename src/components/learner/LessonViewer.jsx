@@ -1,11 +1,12 @@
 // WarrenWise Youth Animal Training Academy - Interactive Lesson Viewer
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ArrowLeft, Volume2, VolumeX, Sparkles, CheckCircle, 
   HelpCircle, AlertCircle, Award, BookOpen, Bot 
 } from 'lucide-react';
 import { AGE_DIVISIONS } from '../../config/constants';
+import { shuffleStringOptions } from '../../utils/quizUtils';
 
 export default function LessonViewer({
   module,
@@ -22,6 +23,12 @@ export default function LessonViewer({
   const divMeta = AGE_DIVISIONS[division] || AGE_DIVISIONS.junior;
   const content = module.ageContent[division] || module.ageContent.junior;
   const quickCheck = content.quickCheck;
+
+  // Mixed-up options so correct answer is not always in the same position
+  const { shuffledOptions, newCorrectIndex } = useMemo(() => {
+    if (!quickCheck?.options) return { shuffledOptions: [], newCorrectIndex: 0 };
+    return shuffleStringOptions(quickCheck.options, quickCheck.correctIndex ?? 0);
+  }, [quickCheck?.question]);
 
   const handleToggleAudio = () => {
     setIsPlayingAudio(!isPlayingAudio);
@@ -144,10 +151,10 @@ export default function LessonViewer({
             </h3>
 
             <div className="space-y-2 mb-4">
-              {quickCheck.options.map((opt, oIdx) => {
+              {shuffledOptions.map((opt, oIdx) => {
                 let btnStyle = 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800';
                 if (quickCheckAnswered) {
-                  if (oIdx === quickCheck.correctIndex) {
+                  if (oIdx === newCorrectIndex) {
                     btnStyle = 'bg-emerald-100 border-emerald-400 text-emerald-950 font-bold';
                   } else if (selectedQuickCheck === oIdx) {
                     btnStyle = 'bg-rose-100 border-rose-300 text-rose-950';
@@ -164,7 +171,7 @@ export default function LessonViewer({
                     className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm transition-all flex items-center justify-between ${btnStyle}`}
                   >
                     <span>{opt}</span>
-                    {quickCheckAnswered && oIdx === quickCheck.correctIndex && (
+                    {quickCheckAnswered && oIdx === newCorrectIndex && (
                       <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                     )}
                   </button>

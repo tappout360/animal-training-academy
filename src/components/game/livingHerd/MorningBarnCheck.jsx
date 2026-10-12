@@ -4,7 +4,7 @@
 // Companion: Barnaby (Holland Lop)
 // Care rules: No medication/dosing actions; welfare-first choices only.
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Sparkles, Heart, Droplets, Wheat, ShieldCheck, Sun, 
   ChevronRight, CheckCircle2, AlertTriangle, Flame, Award, Volume2, HelpCircle,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { soundEffects } from '../../../utils/audioEffects';
 import { RABBIT_TRAIL_DAYS, getRabbitDayScript } from '../../../data/game/rabbitTrailScript';
+import { shuffleObjectOptions } from '../../../utils/quizUtils';
 import LiveHandsOnBarnCheck from './LiveHandsOnBarnCheck';
 
 export default function MorningBarnCheck({
@@ -45,6 +46,11 @@ export default function MorningBarnCheck({
 
   // Retrieve active script for the selected day
   const currentDayScript = getRabbitDayScript(activeDayNumber);
+
+  // Mixed up options so correct answer is not always in the same position
+  const shuffledDayOptions = useMemo(() => {
+    return currentDayScript?.options ? shuffleObjectOptions(currentDayScript.options) : [];
+  }, [activeDayNumber, currentDayScript?.id]);
 
   useEffect(() => {
     // Reset inputs when switching active day
@@ -421,10 +427,10 @@ export default function MorningBarnCheck({
                 <div className="space-y-4 animate-fadeIn">
                   
                   {/* Case 1: Standard Multi-Choice (Days 1, 2, 3, 5, 6) */}
-                  {currentDayScript.options && (
+                  {shuffledDayOptions.length > 0 && (
                     <div className="space-y-2.5">
                       <div className="text-xs font-bold text-slate-700">Choose the best response:</div>
-                      {currentDayScript.options.map((opt, idx) => (
+                      {shuffledDayOptions.map((opt, idx) => (
                         <button
                           key={opt.id}
                           onClick={() => {
@@ -525,6 +531,7 @@ export default function MorningBarnCheck({
                       {/* Active station content */}
                       {(() => {
                         const st = currentDayScript.stations[activeStationIdx];
+                        const shuffledStationOptions = shuffleObjectOptions(st.options);
                         return (
                           <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
                             <div className="text-xs font-black text-purple-900 uppercase">
@@ -534,7 +541,7 @@ export default function MorningBarnCheck({
                               {st.prompt}
                             </p>
                             <div className="space-y-2">
-                              {st.options.map((opt, oIdx) => (
+                              {shuffledStationOptions.map((opt, oIdx) => (
                                 <button
                                   key={oIdx}
                                   onClick={() => handleSelectStationAnswer(st.id, opt.text)}

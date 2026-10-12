@@ -1,13 +1,14 @@
 // WarrenWise Animal Academy - Herd Trail Quest
 // Multi-Mode Educational Challenge Modal with Strict Care Boundaries & AI Hints
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, CheckCircle2, AlertCircle, Bot, Sparkles, 
   HelpCircle, ChevronRight, Award, Compass, Heart, Shield,
   RotateCcw, CheckSquare, Square, Volume2, Mic
 } from 'lucide-react';
 import FairDaySimFinale from './FairDaySimFinale';
+import { shuffleObjectOptions } from '../../utils/quizUtils';
 
 export default function ChallengeModal({
   node,
@@ -20,6 +21,11 @@ export default function ChallengeModal({
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showAiHint, setShowAiHint] = useState(false);
+  
+  // Mixed-up options so correct answer is not always in the same position
+  const displayOptions = useMemo(() => {
+    return node?.options ? shuffleObjectOptions(node.options) : [];
+  }, [node?.id]);
   
   // Mystery Stall: Progressive Clues
   const [revealedClueCount, setRevealedClueCount] = useState(1);
@@ -88,7 +94,7 @@ export default function ChallengeModal({
   };
 
   const handleSubmitAnswer = () => {
-    if (node.options && selectedOptionIndex === null) return;
+    if (displayOptions.length > 0 && selectedOptionIndex === null) return;
     if (node.sequenceItems && orderedStepIds.length < node.sequenceItems.length) return;
     if (node.expectedAnswer && !oralDelivered) {
       setOralDelivered(true);
@@ -103,8 +109,8 @@ export default function ChallengeModal({
     let suppliesDelta = {};
     let bondXpDelta = 25;
 
-    if (node.options && selectedOptionIndex !== null) {
-      const selectedOption = node.options[selectedOptionIndex];
+    if (displayOptions.length > 0 && selectedOptionIndex !== null) {
+      const selectedOption = displayOptions[selectedOptionIndex];
       isCorrect = !!selectedOption.isCorrect;
       conditionDelta = selectedOption.effect?.condition ?? (isCorrect ? 10 : -5);
       suppliesDelta = selectedOption.effect?.supplies ?? {};
@@ -131,7 +137,7 @@ export default function ChallengeModal({
     });
   };
 
-  const selectedOpt = node.options && selectedOptionIndex !== null ? node.options[selectedOptionIndex] : null;
+  const selectedOpt = displayOptions.length > 0 && selectedOptionIndex !== null ? displayOptions[selectedOptionIndex] : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
@@ -318,9 +324,9 @@ export default function ChallengeModal({
         )}
 
         {/* Multiple Choice Options (Standard, Care Choice, Supply, Ethics) */}
-        {node.options && (
+        {displayOptions.length > 0 && (
           <div className="space-y-2.5">
-            {node.options.map((opt, idx) => {
+            {displayOptions.map((opt, idx) => {
               const isSelected = selectedOptionIndex === idx;
               return (
                 <button

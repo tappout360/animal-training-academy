@@ -3,6 +3,7 @@
 
 import { ALL_COSMETICS } from '../data/game/cosmeticsCatalog.js';
 import { TRAIL_HAZARDS, getRandomTrailHazard } from '../data/game/trailHazards.js';
+import { CareActionsService } from './CareActionsService.js';
 
 const STORAGE_PREFIX = 'ww_herd_trail_quest_';
 
@@ -310,6 +311,9 @@ export const DEFAULT_QUEST_STATE = {
     poseTraining: 75, // 0 - 100 (Practicing table stance at rest camps)
     cleanliness: 85 // 0 - 100 (Clean stall bedding, spotless hocks/belly)
   },
+  herdReadiness: 85, // 0 - 100 rolling readiness meter that directly drives show placement
+  careHistory: [],
+  lastCareSession: null,
   petCareCounts: {
     feed: 0,
     water: 0,
@@ -382,7 +386,10 @@ export class TrailQuestEngine {
             trailCompleted: parsed.trailCompleted || false,
             completedTrailPackIds: parsed.completedTrailPackIds || [],
             wagonStatus: { ...DEFAULT_QUEST_STATE.wagonStatus, ...(parsed.wagonStatus || {}) },
-            campStatus: { ...DEFAULT_QUEST_STATE.campStatus, ...(parsed.campStatus || {}) }
+            campStatus: { ...DEFAULT_QUEST_STATE.campStatus, ...(parsed.campStatus || {}) },
+            herdReadiness: parsed.herdReadiness ?? 85,
+            careHistory: parsed.careHistory || [],
+            lastCareSession: parsed.lastCareSession || null
           };
         }
       }
@@ -882,10 +889,18 @@ export class TrailQuestEngine {
   }
 
   /**
+   * Processes a live-action pet care session using CareActionsService.
+   * Updates persistent Herd Readiness, showQuality, and dual rewards.
+   */
+  static recordDetailedPetCareSession(state, sessionData = {}, ageDivision = 'junior') {
+    return CareActionsService.processCareSession(state, sessionData, ageDivision);
+  }
+
+  /**
    * Evaluates the Grand Championship Show Ring performance based on
    * arriving animal condition + showmanship oral exam score or 3-station scoring.
    * Pet care actions (feed, water, brush, clean up, fill with love) add up directly
-   * to a stewardship bonus that elevates final score and placement!
+   * to a stewardship bonus and Herd Readiness multiplier that elevates final score and placement!
    */
   static evaluateShowRing(state, options = {}) {
     let { oralExamScore, stationScore, handlingScore, judgeQAScore, exhibitorNotes = '' } = options;
@@ -894,12 +909,17 @@ export class TrailQuestEngine {
     let physicalScore = 0;
     let knowledgeScore = 0;
 
-    // Calculate pet care stewardship bonus from completed actions
+    // Calculate pet care stewardship bonus from completed actions & persistent herd readiness
     const careCounts = state.petCareCounts || {};
     const totalCareDone = (careCounts.feed || 0) + (careCounts.water || 0) + 
                           (careCounts.brush || 0) + (careCounts.clean_up || 0) + 
                           (careCounts.fill_with_love || 0);
     const careStewardshipBonus = Math.min(15, totalCareDone * 2);
+    
+    // Herd Readiness multiplier from CareActionsService
+    const readinessScore = state.herdReadiness ?? (totalCareDone > 0 ? Math.min(100, 80 + totalCareDone * 3) : 80);
+    const readinessAdvantage = CareActionsService.calculateShowAdvantage(readinessScore);
+    const totalBonus = Math.max(careStewardshipBonus, readinessAdvantage.bonusPoints);
 
     if (stationScore !== undefined && handlingScore !== undefined && judgeQAScore !== undefined) {
       totalScore = Math.min(100, Math.round(stationScore + handlingScore + judgeQAScore));
@@ -917,7 +937,7 @@ export class TrailQuestEngine {
       ) * 0.5;
       knowledgeScore = (exam / 100) * 50;
       const hasRingPoise = (state.purchasedItemIds || []).includes('skill_ring_presence');
-      const bonus = (hasRingPoise ? 5 : 0) + careStewardshipBonus;
+      const bonus = (hasRingPoise ? 5 : 0) + totalBonus;
       totalScore = Math.min(100, Math.round(physicalScore + knowledgeScore + bonus));
     }
 
@@ -991,11 +1011,16 @@ export class TrailQuestEngine {
       superintendentName: 'Dr. Warren Wise, DVM',
       superintendentTitle: 'Chief Academy Superintendent',
       sourceStandard: 'Current ARBA Standard of Perfection & 4-H Showmanship Manual',
+      herdReadiness: readinessScore,
+      showAdvantageTier: readinessAdvantage.tier,
+      showAdvantageMultiplier: readinessAdvantage.multiplier,
       judgeFeedback: totalScore >= 90
         ? `Superb demonstration of 4-H husbandry! Coat sheen, hydration, table composure, and oral standard defense are outstanding.${
+            readinessAdvantage.judgeRemark ? ` ${readinessAdvantage.judgeRemark}` : ''
+          }${
             totalCareDone > 0 ? ` The judge specifically commends the exhibitor's dedication to daily feeding, watering, brushing, clean stall bedding, and loving handling (${totalCareDone} recorded care sessions), which yielded immaculate hocks, vibrant vigor, and calm table trust!` : ''
           } Highly commendable!`
-        : `Good effort across the overland trail! Continue daily feeding, watering, brushing, stall cleaning, and gentle loving handling to boost your score for the next regional championship.`
+        : `Good effort across the overland trail! ${readinessAdvantage.judgeRemark || 'Continue daily feeding, watering, brushing, stall cleaning, and gentle loving handling to boost your score for the next regional championship.'}`
     };
 
     const careerLogEntry = {

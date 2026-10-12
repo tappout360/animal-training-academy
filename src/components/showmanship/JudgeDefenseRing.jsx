@@ -1,12 +1,13 @@
 // WarrenWise Youth Animal Training Academy - ARBA & 4-H Timed Oral Judge Defense Studio
 // Replicates official ring pressure with 15-second countdowns, technical vocabulary drills, and judge scorecards
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Award, Clock, Mic, CheckCircle2, XCircle, RotateCcw, 
   HelpCircle, Volume2, ShieldCheck, Sparkles, ChevronRight,
   Flame, Trophy
 } from 'lucide-react';
+import { shuffleObjectOptions } from '../../utils/quizUtils';
 
 export const ORAL_DEFENSE_QUESTIONS = [
   {
@@ -137,6 +138,11 @@ export default function JudgeDefenseRing({ onCompleteSession }) {
   const [sessionCompleted, setSessionCompleted] = useState(false);
 
   const currentQ = ORAL_DEFENSE_QUESTIONS[currentQuestionIdx];
+
+  // Mixed up options so correct answer is not always in the same position
+  const displayOptions = useMemo(() => {
+    return currentQ?.options ? shuffleObjectOptions(currentQ.options) : [];
+  }, [currentQ?.id]);
 
   // Countdown timer
   useEffect(() => {
@@ -283,7 +289,7 @@ export default function JudgeDefenseRing({ onCompleteSession }) {
               </div>
 
               <div className="space-y-2">
-                {currentQ.options.map((opt) => {
+                {displayOptions.map((opt, idx) => {
                   const isSelected = selectedOptionId === opt.id;
                   return (
                     <button
@@ -305,7 +311,7 @@ export default function JudgeDefenseRing({ onCompleteSession }) {
                           ? 'bg-rose-600 text-white'
                           : 'bg-slate-100 text-slate-700'
                       }`}>
-                        {opt.id.slice(-1).toUpperCase()}
+                        {String.fromCharCode(65 + idx)}
                       </div>
                       <span className="text-xs sm:text-sm font-medium leading-relaxed">
                         {opt.text}

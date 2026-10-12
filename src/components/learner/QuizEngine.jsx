@@ -1,6 +1,6 @@
 // WarrenWise Youth Animal Training Academy - Quiz Engine & Remediation
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   ArrowLeft, CheckCircle2, XCircle, Award, 
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { AGE_DIVISIONS } from '../../config/constants';
 import { explainMissedQuestion } from '../../services/WarrenWiseTrainerAI';
+import { shuffleStringOptions } from '../../utils/quizUtils';
 
 export default function QuizEngine({
   module,
@@ -29,6 +30,12 @@ export default function QuizEngine({
   const currentQ = questions[currentIndex];
   const hasAnsweredCurrent = submittedAnswers[currentIndex] !== undefined;
 
+  // Mixed up options so correct answer is not always in the same position
+  const { shuffledOptions, newCorrectIndex } = useMemo(() => {
+    if (!currentQ?.options) return { shuffledOptions: [], newCorrectIndex: 0 };
+    return shuffleStringOptions(currentQ.options, currentQ.correctIndex ?? 0);
+  }, [currentQ?.id, currentIndex]);
+
   const handleSelectOption = (optIdx) => {
     if (hasAnsweredCurrent) return;
     setSelectedAnswers(prev => ({ ...prev, [currentIndex]: optIdx }));
@@ -38,14 +45,14 @@ export default function QuizEngine({
     const selected = selectedAnswers[currentIndex];
     if (selected === undefined) return;
 
-    const isCorrect = selected === currentQ.correctIndex;
+    const isCorrect = selected === newCorrectIndex;
     setSubmittedAnswers(prev => ({ ...prev, [currentIndex]: isCorrect }));
 
     if (!isCorrect) {
       const breakdown = explainMissedQuestion({
         question: currentQ.question,
-        selectedOption: currentQ.options[selected],
-        correctOption: currentQ.options[currentQ.correctIndex],
+        selectedOption: shuffledOptions[selected],
+        correctOption: shuffledOptions[newCorrectIndex],
         explanation: currentQ.explanation,
         division
       });
@@ -216,12 +223,12 @@ export default function QuizEngine({
 
         {/* Options */}
         <div className="space-y-2.5">
-          {currentQ.options.map((opt, optIdx) => {
+          {shuffledOptions.map((opt, optIdx) => {
             const isSelected = selectedAnswers[currentIndex] === optIdx;
             let optStyle = 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-800 bg-white';
 
             if (hasAnsweredCurrent) {
-              if (optIdx === currentQ.correctIndex) {
+              if (optIdx === newCorrectIndex) {
                 optStyle = 'border-emerald-400 bg-emerald-50 text-emerald-950 font-bold';
               } else if (isSelected) {
                 optStyle = 'border-rose-300 bg-rose-50 text-rose-950';
@@ -240,10 +247,10 @@ export default function QuizEngine({
                 className={`w-full text-left p-3.5 rounded-xl border text-xs sm:text-sm transition-all flex items-center justify-between ${optStyle}`}
               >
                 <span>{opt}</span>
-                {hasAnsweredCurrent && optIdx === currentQ.correctIndex && (
+                {hasAnsweredCurrent && optIdx === newCorrectIndex && (
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                 )}
-                {hasAnsweredCurrent && isSelected && optIdx !== currentQ.correctIndex && (
+                {hasAnsweredCurrent && isSelected && optIdx !== newCorrectIndex && (
                   <XCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
                 )}
               </button>

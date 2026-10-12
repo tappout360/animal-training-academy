@@ -58,6 +58,13 @@ import {
   explainMissedArbaScenario,
   getArbaPrimarySourceGuidance
 } from '../src/services/WarrenWiseTrainerAI.js';
+import { 
+  shuffleArray, 
+  shuffleStringOptions, 
+  shuffleObjectOptions,
+  deterministicShuffle
+} from '../src/utils/quizUtils.js';
+import { CareActionsService, CARE_ACTION_TYPES, CARE_ACTION_SPECS } from '../src/services/CareActionsService.js';
 
 console.log('🧪 Starting WarrenWise Youth Animal Training Academy Test Suite...\n');
 
@@ -1924,6 +1931,165 @@ test('Live Trail Action Game 3-lane steering, speed paces, collectibles and haza
   assert.strictEqual(currentMile, 100, 'Miles must cap accurately at 100');
   const reachedDestination = currentMile >= 100;
   assert.strictEqual(reachedDestination, true, 'Destination trigger must fire at Mile 100');
+});
+
+// ----------------------------------------------------
+// 18. ANSWER SHUFFLING & PET CARE ACTIONS SYSTEM TESTS
+// ----------------------------------------------------
+console.log('\n--- 18. Answer Shuffling & Pet Care Actions System Tests ---');
+
+test('shuffleStringOptions mixes up option positions while accurately preserving correct answer indexing', () => {
+  const originalOptions = ['Grass Hay (Correct)', 'Ice Cream', 'Chocolate Cake', 'Salty Pretzels'];
+  const originalCorrectIndex = 0;
+
+  // Run 30 iterations to verify variance (not always in spot 0)
+  const foundIndices = new Set();
+  for (let i = 0; i < 30; i++) {
+    const { shuffledOptions, newCorrectIndex } = shuffleStringOptions(originalOptions, originalCorrectIndex);
+    assert.strictEqual(shuffledOptions.length, 4);
+    assert.strictEqual(shuffledOptions[newCorrectIndex], 'Grass Hay (Correct)', 'Correct answer text must match newCorrectIndex');
+    foundIndices.add(newCorrectIndex);
+  }
+
+  // Over 30 trials, the correct answer should appear in at least 2 distinct positions (not always index 0)
+  assert.ok(foundIndices.size >= 2, `Options must appear in multiple spots across trials, found in ${foundIndices.size} spots`);
+});
+
+test('shuffleObjectOptions preserves option properties and does not mutate original array', () => {
+  const originalObjList = [
+    { id: 'opt_1', text: 'Fresh water', isCorrect: true },
+    { id: 'opt_2', text: 'Hot sun', isCorrect: false },
+    { id: 'opt_3', text: 'Noise', isCorrect: false }
+  ];
+
+  const shuffled = shuffleObjectOptions(originalObjList);
+  assert.strictEqual(shuffled.length, 3);
+  assert.notStrictEqual(shuffled, originalObjList, 'Must return a new array instance');
+  assert.strictEqual(originalObjList[0].id, 'opt_1', 'Original array must remain unmutated');
+
+  const correctItem = shuffled.find(o => o.isCorrect);
+  assert.ok(correctItem);
+  assert.strictEqual(correctItem.text, 'Fresh water');
+});
+
+test('CareActionsService evaluates individual action qualities based on completeness, precision, and gentleness', () => {
+  // Feed: high hay ratio + pellets
+  const feedQuality = CareActionsService.evaluateActionQuality(CARE_ACTION_TYPES.FEED, {
+    hayPortionPct: 100,
+    pelletPortionPct: 75
+  });
+  assert.strictEqual(feedQuality, 100);
+
+  // Water: optimal range (75-95)
+  const waterOptimal = CareActionsService.evaluateActionQuality(CARE_ACTION_TYPES.WATER, {
+    waterFillPct: 85
+  });
+  assert.strictEqual(waterOptimal, 100);
+
+  // Water: underfilled
+  const waterUnder = CareActionsService.evaluateActionQuality(CARE_ACTION_TYPES.WATER, {
+    waterFillPct: 40
+  });
+  assert.ok(waterUnder < 80, 'Underfilled water must receive lower quality score');
+
+  // Brush: gentle strokes vs rushed pulling
+  const brushGentle = CareActionsService.evaluateActionQuality(CARE_ACTION_TYPES.BRUSH, {
+    coatLusterPct: 90,
+    rushedCount: 0,
+    gentleCount: 15
+  });
+  assert.strictEqual(brushGentle, 100);
+
+  const brushRushed = CareActionsService.evaluateActionQuality(CARE_ACTION_TYPES.BRUSH, {
+    coatLusterPct: 80,
+    rushedCount: 5,
+    gentleCount: 2
+  });
+  assert.ok(brushRushed < brushGentle, 'Rushed brushing must deduct quality score');
+});
+
+test('CareActionsService processes complete care session, updates rolling Herd Readiness and showQuality', () => {
+  const initialState = {
+    herdReadiness: 75,
+    showQuality: {
+      coatCondition: 70,
+      vigorHydration: 70,
+      temperament: 70,
+      poseTraining: 70,
+      cleanliness: 70
+    },
+    trailPoints: 50,
+    petCareCounts: {}
+  };
+
+  const sessionData = {
+    actions: {
+      feed: { hayPortionPct: 100, pelletPortionPct: 75 },
+      water: { waterFillPct: 85 },
+      brush: { coatLusterPct: 90, rushedCount: 0, gentleCount: 18 },
+      clean_up: { soiledSpotsCleared: 3, freshBeddingSpread: 3 },
+      fill_with_love: { loveMeterPct: 100, durationSeconds: 4.0, gentleCount: 10 }
+    }
+  };
+
+  const result = CareActionsService.processCareSession(initialState, sessionData, 'junior');
+
+  assert.strictEqual(result.dailyCareScore, 100, 'All 5 actions performed perfectly must yield 100 daily care score');
+  assert.strictEqual(result.isFullHerdCoverage, true);
+  assert.strictEqual(result.handlingStyle, 'gentle_master');
+  assert.ok(result.herdReadiness > initialState.herdReadiness, 'Herd readiness must rise after care session');
+  assert.strictEqual(result.herdReadiness, 90, '75 * 0.4 + 100 * 0.6 = 90 rolling readiness');
+
+  // Show quality metrics boosted
+  assert.ok(result.updatedState.showQuality.coatCondition > 70);
+  assert.ok(result.updatedState.showQuality.cleanliness > 70);
+  assert.ok(result.updatedState.showQuality.temperament > 70);
+
+  // Dual rewards
+  assert.ok(result.earnedMasteryXp > 0);
+  assert.ok(result.earnedCosmeticTokens >= 8, 'Full herd coverage grants cosmetic token bonus');
+});
+
+test('Herd Readiness directly drives Fair Day Sim placement, score multiplier, and Judge Miller feedback', () => {
+  // Scenario A: Grand Champion Caliber (Readiness >= 95)
+  const advGrand = CareActionsService.calculateShowAdvantage(98);
+  assert.strictEqual(advGrand.tier, 'Grand Champion Caliber');
+  assert.strictEqual(advGrand.multiplier, 1.15);
+  assert.strictEqual(advGrand.bonusPoints, 15);
+  assert.ok(advGrand.judgeRemark.includes('Exemplary daily stewardship'));
+
+  // Scenario B: Reserve Champion Caliber (Readiness 85 - 94)
+  const advReserve = CareActionsService.calculateShowAdvantage(88);
+  assert.strictEqual(advReserve.tier, 'Reserve Champion Caliber');
+  assert.strictEqual(advReserve.multiplier, 1.10);
+  assert.strictEqual(advReserve.bonusPoints, 10);
+
+  // Scenario C: Neglected / Low Care (< 60)
+  const advLow = CareActionsService.calculateShowAdvantage(50);
+  assert.strictEqual(advLow.tier, 'Needs Care Refinement');
+  assert.strictEqual(advLow.multiplier, 0.90);
+  assert.strictEqual(advLow.bonusPoints, 0);
+  assert.ok(advLow.judgeRemark.includes('restlessness and slight coat dustiness'));
+
+  // Integration into TrailQuestEngine.evaluateShowRing
+  const highCareState = {
+    ...TrailQuestEngine.loadState('test_readiness_champion'),
+    herdReadiness: 96,
+    petCareCounts: { feed: 1, water: 1, brush: 1, clean_up: 1, fill_with_love: 1 }
+  };
+  const evalHigh = TrailQuestEngine.evaluateShowRing(highCareState, { oralExamScore: 92 });
+  assert.strictEqual(evalHigh.awardRecord.showAdvantageTier, 'Grand Champion Caliber');
+  assert.ok(evalHigh.totalScore >= 95, 'High readiness bonus elevates score to Grand Champion');
+  assert.strictEqual(evalHigh.placementRank, 1);
+});
+
+test('Age-Band sensitivity adaptations protect Cloverbuds while enforcing technical precision for Seniors', () => {
+  const cloverSettings = CareActionsService.getAgeBandSettings('cloverbud');
+  const seniorSettings = CareActionsService.getAgeBandSettings('senior');
+
+  assert.ok(cloverSettings.maxBrushSpeed > seniorSettings.maxBrushSpeed, 'Cloverbuds receive more forgiving speed threshold');
+  assert.ok(cloverSettings.gentlenessFloor > seniorSettings.gentlenessFloor, 'Cloverbuds have a protective gentleness score floor');
+  assert.ok(cloverSettings.minLoveSeconds < seniorSettings.minLoveSeconds, 'Cloverbuds have shorter hold requirement');
 });
 
 // Summary

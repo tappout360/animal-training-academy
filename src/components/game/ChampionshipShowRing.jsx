@@ -2,7 +2,7 @@
 // Championship Show Ring: The Grand Climax at the end of the Pioneer Trail
 // Real 4-H & ARBA Showmanship Evaluation, Primary Source Questions, Judge Placement & Museum-Grade Certificate
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Trophy, Award, CheckCircle2, XCircle, Sparkles, ChevronRight, 
   ArrowLeft, RotateCcw, ShieldCheck, Heart, User, Check, Star,
@@ -11,6 +11,7 @@ import {
 import { TrailQuestEngine } from '../../services/TrailQuestEngine';
 import { HIGHER_ORDER_ARBA_QUESTIONS } from '../../data/arbaAccuracyLedger';
 import { soundEffects } from '../../utils/audioEffects';
+import { shuffleObjectOptions } from '../../utils/quizUtils';
 
 export default function ChampionshipShowRing({
   questState,
@@ -44,13 +45,19 @@ export default function ChampionshipShowRing({
   // Higher-order questions with verified primary source citations
   const questions = HIGHER_ORDER_ARBA_QUESTIONS.slice(0, 4);
 
+  // Mixed up options so correct answer is not always in the same position
+  const displayOptions = useMemo(() => {
+    const currentQ = questions[currentQuestionIdx];
+    return currentQ?.options ? shuffleObjectOptions(currentQ.options) : [];
+  }, [currentQuestionIdx]);
+
   const handleSelectAnswer = (idx) => {
     setSelectedAnswerIdx(idx);
     soundEffects.playTap();
   };
 
   const handleNextQuestion = () => {
-    const isCorrect = questions[currentQuestionIdx].options[selectedAnswerIdx]?.isCorrect || false;
+    const isCorrect = displayOptions[selectedAnswerIdx]?.isCorrect || false;
     const nextAnswers = [...oralAnswers, { questionIdx: currentQuestionIdx, isCorrect }];
     setOralAnswers(nextAnswers);
     setSelectedAnswerIdx(null);
@@ -273,13 +280,18 @@ export default function ChampionshipShowRing({
             </div>
 
             {/* Pet Care Stewardship Advantage Card */}
-            <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 border border-amber-400/50 rounded-2xl p-3.5 text-center space-y-1">
-              <div className="flex items-center justify-center gap-1.5 text-xs font-black text-amber-900 uppercase tracking-wide">
-                <span>🏆</span>
-                <span>Pet Care Advantage Active: Daily Care Elevated Your Score!</span>
+            <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 border border-amber-400/50 rounded-2xl p-4 text-center space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-300/40 pb-2">
+                <div className="flex items-center gap-1.5 text-xs font-black text-amber-900 uppercase tracking-wide">
+                  <span>🏆</span>
+                  <span>Pet Care Advantage: {questState.herdReadiness || 85}% Herd Readiness</span>
+                </div>
+                <span className="text-[11px] bg-purple-700 text-white font-black px-2.5 py-0.5 rounded-full">
+                  {(questState.herdReadiness || 85) >= 95 ? 'Grand Champion 1.15x Multiplier' : (questState.herdReadiness || 85) >= 85 ? 'Reserve Champion 1.10x Multiplier' : 'Blue Ribbon Standard'}
+                </span>
               </div>
-              <p className="text-[11px] text-amber-800">
-                Feeding (vigor), watering (hydration), brushing (sheen), cleaning up (spotless hocks), and daily love (calm poise) combine for up to a <strong>+15 Points Stewardship Boost</strong>!
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                Feeding (vigor), watering (hydration), brushing (sheen), cleaning up (spotless hocks), and daily love (calm poise) combine into a rolling <strong>Herd Readiness</strong> score that directly drives Judge Miller's final placement!
               </p>
             </div>
 
@@ -331,7 +343,7 @@ export default function ChampionshipShowRing({
 
             {/* Options */}
             <div className="space-y-3">
-              {questions[currentQuestionIdx].options.map((opt, idx) => {
+              {displayOptions.map((opt, idx) => {
                 const isSelected = selectedAnswerIdx === idx;
                 return (
                   <button

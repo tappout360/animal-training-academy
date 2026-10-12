@@ -1,8 +1,9 @@
 // WarrenWise Youth Animal Training Academy - Skillathon ID Drills
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Target, CheckCircle2, XCircle, Lightbulb, RefreshCw, Award, ArrowRight } from 'lucide-react';
 import { SKILLATHON_DRILLS } from '../../data/skillathonData';
+import { shuffleStringOptions } from '../../utils/quizUtils';
 
 export default function SkillathonDrills({ selectedSpeciesId = 'rabbits' }) {
   const speciesKey = selectedSpeciesId === 'cavies' ? 'cavies' : 'rabbits';
@@ -19,10 +20,16 @@ export default function SkillathonDrills({ selectedSpeciesId = 'rabbits' }) {
   const drillKey = `${activeStationIdx}_${currentDrillIdx}`;
   const isAnswered = scoreMap[drillKey] !== undefined;
 
+  // Mixed up options so correct answer is not always in the same position
+  const { shuffledOptions, newCorrectIndex } = useMemo(() => {
+    if (!currentDrill?.options) return { shuffledOptions: [], newCorrectIndex: 0 };
+    return shuffleStringOptions(currentDrill.options, currentDrill.correctIndex ?? 0);
+  }, [drillKey]);
+
   const handleSelectOption = (idx) => {
     if (isAnswered) return;
     setSelectedOpt(idx);
-    const isCorrect = idx === currentDrill.correctIndex;
+    const isCorrect = idx === newCorrectIndex;
     setScoreMap(prev => ({ ...prev, [drillKey]: isCorrect }));
   };
 
@@ -112,12 +119,12 @@ export default function SkillathonDrills({ selectedSpeciesId = 'rabbits' }) {
 
         {/* Options */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {currentDrill.options.map((opt, oIdx) => {
+          {shuffledOptions.map((opt, oIdx) => {
             const isSelected = selectedOpt === oIdx;
             let btnClass = 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-800 bg-white';
 
             if (isAnswered) {
-              if (oIdx === currentDrill.correctIndex) {
+              if (oIdx === newCorrectIndex) {
                 btnClass = 'border-emerald-400 bg-emerald-50 text-emerald-950 font-bold';
               } else if (isSelected) {
                 btnClass = 'border-rose-300 bg-rose-50 text-rose-950';
@@ -134,10 +141,10 @@ export default function SkillathonDrills({ selectedSpeciesId = 'rabbits' }) {
                 className={`p-4 rounded-xl border text-xs sm:text-sm font-medium transition-all text-left flex items-center justify-between shadow-2xs ${btnClass}`}
               >
                 <span>{opt}</span>
-                {isAnswered && oIdx === currentDrill.correctIndex && (
+                {isAnswered && oIdx === newCorrectIndex && (
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                 )}
-                {isAnswered && isSelected && oIdx !== currentDrill.correctIndex && (
+                {isAnswered && isSelected && oIdx !== newCorrectIndex && (
                   <XCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
                 )}
               </button>
