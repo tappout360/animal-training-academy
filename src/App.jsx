@@ -23,6 +23,7 @@ import RoleAuthGateModal from './components/common/RoleAuthGateModal';
 import BarnRecordBook from './components/recordbook/BarnRecordBook';
 import SubscriptionPlansModal from './components/billing/SubscriptionPlansModal';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import FeedbackWidget from './components/common/FeedbackWidget';
 
 import { getSpeciesPackById } from './data/speciesPacks';
 import { canCoachAccessLearner } from './services/YouthSafetyService';
@@ -328,6 +329,13 @@ export default function App() {
         isOpen={isSubscriptionModalOpen}
         onClose={() => setIsSubscriptionModalOpen(false)}
         parentEmail="parent.miller@example.com"
+      />
+
+      {/* Floating In-App Continuous Feedback Widget */}
+      <FeedbackWidget
+        userRole={activeRole}
+        currentDivision={activeDivision}
+        context={activeTab}
       />
 
       {/* Persistent Legal & Accuracy Footer */}

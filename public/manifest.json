@@ -1,16 +1,44 @@
 {
+  "id": "warrenwise-animal-academy",
   "name": "WarrenWise Youth Animal Training Academy",
-  "short_name": "AnimalAcademy",
-  "description": "4-H & Youth Livestock Project Learning Platform",
+  "short_name": "WarrenWise",
+  "description": "4-H & Youth Livestock Project Learning Platform. 100% Barn-Ready Offline PWA.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#166534",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#15803d",
+  "categories": ["education", "kids", "lifestyle"],
   "icons": [
     {
       "src": "/favicon.svg",
       "sizes": "192x192 512x512",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Herd Trail Quest",
+      "short_name": "Trail Quest",
+      "description": "Overland animal learning quest and daily barn check",
+      "url": "/?tab=herd_trail",
+      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Showmanship Studio",
+      "short_name": "Showmanship",
+      "description": "ARBA physical inspection drills and 15s oral defense",
+      "url": "/?tab=showmanship",
+      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Fair Record Book",
+      "short_name": "Record Book",
+      "description": "Digital livestock weigh-in and average daily gain calculator",
+      "url": "/?tab=record_book",
+      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
     }
   ]
 }

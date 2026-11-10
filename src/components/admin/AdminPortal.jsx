@@ -5,11 +5,13 @@ import React, { useState } from 'react';
 import { 
   ShieldCheck, Lock, User, KeyRound, Eye, EyeOff, AlertTriangle, 
   LogOut, ArrowLeft, Bot, ToggleLeft, ToggleRight, BarChart3, 
-  Users, CheckCircle2, ShieldAlert, Sparkles, CreditCard, RefreshCw
+  Users, CheckCircle2, ShieldAlert, Sparkles, CreditCard, RefreshCw,
+  MessageSquarePlus, MessageSquare, ThumbsUp, ThumbsDown, Filter, Trash2, Heart
 } from 'lucide-react';
 import { AdminAuthService, ADMIN_CREDENTIALS } from '../../services/AdminAuthService';
 import ContentGovernanceHub from '../governance/ContentGovernanceHub';
 import AdminSubscriptionDashboard from './AdminSubscriptionDashboard';
+import { FeedbackService } from '../../services/FeedbackService';
 import { INITIAL_FEATURE_FLAGS } from '../../config/constants';
 
 export default function AdminPortal({
@@ -31,8 +33,17 @@ export default function AdminPortal({
   const [loginError, setLoginError] = useState('');
 
   // Dashboard Sub-navigation Tab
-  const [activeTab, setActiveTab] = useState('governance'); // 'governance' | 'flags' | 'safety_logs' | 'analytics' | 'subscriptions' | 'security'
+  const [activeTab, setActiveTab] = useState('governance'); // 'governance' | 'flags' | 'safety_logs' | 'analytics' | 'subscriptions' | 'security' | 'feedback'
   const [flags, setFlags] = useState(featureFlags);
+
+  // User & Club Feedback State
+  const [feedbackList, setFeedbackList] = useState(() => FeedbackService.getAllFeedback());
+  const [feedbackFilter, setFeedbackFilter] = useState('all'); // 'all' | 'youth' | 'parent' | 'coach'
+  const feedbackSummary = FeedbackService.getFeedbackSummary();
+
+  const handleRefreshFeedback = () => {
+    setFeedbackList(FeedbackService.getAllFeedback());
+  };
 
   // Handle Login
   const handleLogin = (e) => {
@@ -253,6 +264,7 @@ export default function AdminPortal({
         <div className="flex items-center gap-2 mt-5 pt-4 border-t border-purple-900/50 overflow-x-auto scrollbar-none text-xs font-bold">
           {[
             { id: 'governance', label: 'Knowledge Governance (ARBA)', icon: <ShieldAlert className="w-4 h-4" /> },
+            { id: 'feedback', label: 'User & Club Feedback', icon: <MessageSquarePlus className="w-4 h-4" /> },
             { id: 'flags', label: 'System Feature Flags', icon: <ToggleRight className="w-4 h-4" /> },
             { id: 'safety_logs', label: 'AI Safety & Vet Logs', icon: <Bot className="w-4 h-4" /> },
             { id: 'analytics', label: 'Learning Analytics', icon: <BarChart3 className="w-4 h-4" /> },
@@ -419,6 +431,142 @@ export default function AdminPortal({
       {/* ========================================================= */}
       {activeTab === 'subscriptions' && (
         <AdminSubscriptionDashboard />
+      )}
+
+      {/* ========================================================= */}
+      {/* TAB: USER & 4-H CLUB FEEDBACK (COPPA SAFE) */}
+      {/* ========================================================= */}
+      {activeTab === 'feedback' && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+                  Continuous Improvement Loop
+                </span>
+                <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  COPPA PII-Sanitized
+                </span>
+              </div>
+              <h3 className="font-black text-lg text-slate-900 mt-1">User &amp; 4-H Club Leader Feedback</h3>
+              <p className="text-xs text-slate-500">Live responses collected from youth, parents, and volunteer project leaders.</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleRefreshFeedback}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Refresh Feed</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Metric Summary Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-purple-50/60 border border-purple-200/80 p-4 rounded-2xl">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 block">Total Submissions</span>
+              <div className="text-2xl font-black text-purple-950 mt-1">{feedbackSummary.total}</div>
+              <span className="text-[11px] text-purple-600 font-medium">From all cohorts</span>
+            </div>
+
+            <div className="bg-emerald-50/60 border border-emerald-200/80 p-4 rounded-2xl">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">Satisfaction Rate</span>
+              <div className="text-2xl font-black text-emerald-950 mt-1">{feedbackSummary.satisfactionPercent}%</div>
+              <span className="text-[11px] text-emerald-700 font-medium">Helpful / Positive</span>
+            </div>
+
+            <div className="bg-blue-50/60 border border-blue-200/80 p-4 rounded-2xl">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 block">Helpful Count</span>
+              <div className="text-2xl font-black text-blue-950 mt-1">{feedbackSummary.helpfulCount}</div>
+              <span className="text-[11px] text-blue-600 font-medium">5-Star &amp; Positive</span>
+            </div>
+
+            <div className="bg-amber-50/60 border border-amber-200/80 p-4 rounded-2xl">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 block">Feature Requests</span>
+              <div className="text-2xl font-black text-amber-950 mt-1">{feedbackSummary.needsWorkCount}</div>
+              <span className="text-[11px] text-amber-700 font-medium">Needs work or expansion</span>
+            </div>
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
+            <span className="text-xs font-bold text-slate-500 mr-1 flex items-center gap-1">
+              <Filter className="w-3.5 h-3.5" /> Filter by:
+            </span>
+            {[
+              { id: 'all', label: 'All Roles' },
+              { id: 'youth', label: 'Youth Learners' },
+              { id: 'parent', label: 'Parents / Guardians' },
+              { id: 'coach', label: '4-H Leaders & Coaches' }
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFeedbackFilter(f.id)}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  feedbackFilter === f.id
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Feedback List */}
+          <div className="space-y-3">
+            {feedbackList
+              .filter(item => feedbackFilter === 'all' || item.role === feedbackFilter)
+              .map(item => (
+                <div
+                  key={item.id}
+                  className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-2 hover:bg-slate-50 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        item.rating === 'helpful'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : item.rating === 'neutral'
+                          ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                          : 'bg-rose-100 text-rose-800 border border-rose-300'
+                      }`}>
+                        {item.rating === 'helpful' ? '👍 Helpful' : item.rating === 'neutral' ? '😐 Neutral' : '💡 Needs Work'}
+                      </span>
+                      <span className="text-xs font-bold text-slate-700 capitalize">
+                        {item.role === 'coach' ? '4-H Leader / Coach' : item.role === 'parent' ? 'Parent / Guardian' : 'Youth Member'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 capitalize">
+                        ({item.division || 'Junior'})
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] text-slate-400 font-mono">
+                      {new Date(item.timestamp).toLocaleDateString()} at {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+
+                  <p className="text-xs sm:text-sm text-slate-800 font-medium leading-relaxed">
+                    "{item.comment}"
+                  </p>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-200/60">
+                    <span className="font-mono">Context: {item.context || 'general'}</span>
+                    <span className="text-purple-600 font-semibold">Verified Safe for Youth Portal</span>
+                  </div>
+                </div>
+              ))}
+
+            {feedbackList.filter(item => feedbackFilter === 'all' || item.role === feedbackFilter).length === 0 && (
+              <div className="text-center py-8 text-xs text-slate-400">
+                No feedback entries match this filter.
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ========================================================= */}

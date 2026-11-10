@@ -1,12 +1,13 @@
 // WarrenWise Youth Animal Training Academy - Main Navigation Bar
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, Bot, Flame, Wifi, WifiOff, Award, 
   BookOpen, Target, CheckSquare, ShieldCheck, Users, BarChart3, HelpCircle,
-  Compass, Map, ClipboardList
+  Compass, Map, ClipboardList, Download
 } from 'lucide-react';
 import RoleSwitcher from './RoleSwitcher';
+import { PwaService } from '../../services/PwaService';
 
 export default function Navbar({
   activeRole,
@@ -19,6 +20,13 @@ export default function Navbar({
   onOpenPlans,
   learner
 }) {
+  const [canInstall, setCanInstall] = useState(false);
+
+  useEffect(() => {
+    return PwaService.onInstallStateChange(({ canInstall }) => {
+      setCanInstall(canInstall);
+    });
+  }, []);
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
       {/* Top tier brand and role bar */}
@@ -45,6 +53,18 @@ export default function Navbar({
 
         {/* Right side stats and toggles */}
         <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+          {/* Barn PWA One-Tap Install Prompt (Mobile/Tablet/Desktop) */}
+          {canInstall && (
+            <button
+              onClick={() => PwaService.promptInstall()}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-all cursor-pointer animate-pulse"
+              title="Install WarrenWise App for full offline barn and fairground access"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Install Barn App</span>
+            </button>
+          )}
+
           {/* Barn Offline Mode Toggle */}
           <button
             onClick={onToggleOffline}
