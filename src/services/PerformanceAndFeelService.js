@@ -153,7 +153,12 @@ export class PerformanceAndFeelService {
    * Tracks consecutive high-quality care days and returns memory dialogue.
    */
   static recordCareDayStreak(currentConsecutiveDays = 0, isHighQuality = true) {
-    const updatedStreak = isHighQuality ? currentConsecutiveDays + 1 : 1;
+    const rawCount = typeof currentConsecutiveDays === 'number'
+      ? currentConsecutiveDays
+      : (currentConsecutiveDays && typeof currentConsecutiveDays.count === 'number'
+          ? currentConsecutiveDays.count
+          : 1);
+    const updatedStreak = isHighQuality ? rawCount + 1 : 1;
 
     let posture = 'alert_curious';
     let memoryDialogue = '';

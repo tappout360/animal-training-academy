@@ -66,7 +66,7 @@ export default function HerdTrailQuest({
     setDailyStatus(LivingHerdEngine.getDailyStatus(learner.id, loaded));
   }, [learner.id]);
 
-  const currentTrailPack = getTrailPackById(questState.activeTrailPackId);
+  const currentTrailPack = getTrailPackById(questState.activeTrailPackId) || TRAIL_PACKS[0];
 
   // Resolve Morning Barn Check Daily Need
   const handleResolveMorningNeed = (needId, optionId) => {

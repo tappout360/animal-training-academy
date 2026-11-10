@@ -22,6 +22,7 @@ import ParentControlCenter from './components/parent/ParentControlCenter';
 import RoleAuthGateModal from './components/common/RoleAuthGateModal';
 import BarnRecordBook from './components/recordbook/BarnRecordBook';
 import SubscriptionPlansModal from './components/billing/SubscriptionPlansModal';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 import { getSpeciesPackById } from './data/speciesPacks';
 import { canCoachAccessLearner } from './services/YouthSafetyService';
@@ -197,13 +198,15 @@ export default function App() {
                 /* Normal Tab Views */
                 <>
                   {activeTab === 'herd_trail' && (
-                    <HerdTrailQuest
-                      learner={currentLearner}
-                      activeDivision={activeDivision}
-                      userRole={activeRole}
-                      onOpenAiTrainer={() => setIsAiModalOpen(true)}
-                      onCompleteQuiz={handleCompleteQuiz}
-                    />
+                    <ErrorBoundary onReset={() => setActiveTab('modules')}>
+                      <HerdTrailQuest
+                        learner={currentLearner}
+                        activeDivision={activeDivision}
+                        userRole={activeRole}
+                        onOpenAiTrainer={() => setIsAiModalOpen(true)}
+                        onCompleteQuiz={handleCompleteQuiz}
+                      />
+                    </ErrorBoundary>
                   )}
 
                   {activeTab === 'modules' && (

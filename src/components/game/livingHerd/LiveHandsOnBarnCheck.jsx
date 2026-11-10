@@ -31,11 +31,18 @@ export default function LiveHandsOnBarnCheck({
   const [liveReadiness, setLiveReadiness] = useState(questState?.herdReadiness || 85);
 
   // Performance & Feel criteria states
-  const initialStreak = questState?.careStreak || questState?.dailyStreak || 1;
+  const getCleanStreakCount = (val) => {
+    if (typeof val === 'number') return val;
+    if (val && typeof val.count === 'number') return val.count;
+    return 1;
+  };
+  const initialStreak = getCleanStreakCount(questState?.careStreak ?? questState?.dailyStreak);
   const streakInfo = PerformanceAndFeelService.recordCareDayStreak(initialStreak, true);
-  const [consecutiveDays, setConsecutiveDays] = useState(initialStreak);
-  const [companionPosture, setCompanionPosture] = useState(streakInfo.posture);
-  const [memoryGreeting, setMemoryGreeting] = useState(streakInfo.memoryDialogue);
+  const [consecutiveDays, setConsecutiveDays] = useState(
+    typeof streakInfo?.updatedStreak === 'number' ? streakInfo.updatedStreak : initialStreak
+  );
+  const [companionPosture, setCompanionPosture] = useState(streakInfo?.posture || 'alert_curious');
+  const [memoryGreeting, setMemoryGreeting] = useState(streakInfo?.memoryDialogue || 'Barnaby is alert and curious.');
   const [perfMode, setPerfMode] = useState(PerformanceAndFeelService.isPerformanceMode());
   const [fpsStats, setFpsStats] = useState({ fps: 60, hitchCount: 0 });
   const [showFpsHud, setShowFpsHud] = useState(false);
