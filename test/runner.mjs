@@ -10,8 +10,9 @@ import {
   transitionContentStatus, isContentStale 
 } from '../src/services/GovernanceService.js';
 import { 
-  validateYouthProfile, verifyParentPin, canCoachAccessLearner 
+  validateYouthProfile, verifyParentPin, verifyCoachCode, canCoachAccessLearner 
 } from '../src/services/YouthSafetyService.js';
+import { AdminAuthService } from '../src/services/AdminAuthService.js';
 import { calculateLearnerMastery } from '../src/services/MasteryEngine.js';
 import { 
   issueVerifiableCertificate, issueMasteryCertificate 
@@ -744,21 +745,32 @@ test('Species and game mode filtering respects parent-defined allowances', () =>
 // ----------------------------------------------------
 console.log('--- 10. Critical Paths & Punch List Quality Hardening Tests ---');
 
-test('Role authentication gates verify parent PIN, admin key, and coach code before role transition', () => {
+test('Role authentication gates verify parent PIN, coach passcode (2222), and separate Jmounts admin credentials', () => {
   // Parent PIN verification
   assert.strictEqual(verifyParentPin('4444', '4444'), true, 'Correct parent PIN must pass');
   assert.strictEqual(verifyParentPin('0000', '4444'), false, 'Incorrect parent PIN must be rejected');
   assert.strictEqual(verifyParentPin('', '4444'), false, 'Empty parent PIN must be rejected');
 
-  // Admin Master Key (9999) check
-  const isAdminAuthorized = (key) => key.trim() === '9999';
-  assert.strictEqual(isAdminAuthorized('9999'), true, 'Valid admin key must grant access');
-  assert.strictEqual(isAdminAuthorized('1234'), false, 'Invalid admin key must be blocked');
+  // Coach Club Code (2222) check
+  assert.strictEqual(verifyCoachCode('2222'), true, 'Valid coach code 2222 must grant access');
+  assert.strictEqual(verifyCoachCode('3050'), false, 'Old coach code 3050 must no longer grant access');
+  assert.strictEqual(verifyCoachCode('wrong'), false, 'Invalid coach code must be blocked');
 
-  // Coach Club Code (3050) check
-  const isCoachAuthorized = (code) => code.trim() === '3050';
-  assert.strictEqual(isCoachAuthorized('3050'), true, 'Valid coach code must grant access');
-  assert.strictEqual(isCoachAuthorized('wrong'), false, 'Invalid coach code must be blocked');
+  // Dedicated Jmounts Administrator Credentials check
+  assert.strictEqual(AdminAuthService.validateCredentials('Jmounts', 'JakylieRabbitry4388'), true, 'Valid Jmounts credentials must authenticate');
+  assert.strictEqual(AdminAuthService.validateCredentials('Jmounts', 'wrongpass'), false, 'Invalid password must be rejected');
+  assert.strictEqual(AdminAuthService.validateCredentials('admin', 'JakylieRabbitry4388'), false, 'Invalid username must be rejected');
+
+  // Admin session login & logout lifecycle
+  const loginRes = AdminAuthService.login('Jmounts', 'JakylieRabbitry4388');
+  assert.strictEqual(loginRes.success, true);
+  assert.strictEqual(loginRes.user.username, 'Jmounts');
+  assert.strictEqual(AdminAuthService.isAuthenticated(), true);
+  assert.strictEqual(AdminAuthService.getCurrentAdmin().displayName, 'Jmounts');
+
+  AdminAuthService.logout();
+  assert.strictEqual(AdminAuthService.isAuthenticated(), false);
+  assert.strictEqual(AdminAuthService.getCurrentAdmin(), null);
 });
 
 test('Parent control scoping strictly isolates linked children', () => {

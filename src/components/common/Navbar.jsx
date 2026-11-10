@@ -249,44 +249,18 @@ export default function Navbar({
           )}
 
           {activeRole === 'admin' && (
-            <>
-              <button
-                onClick={() => onSelectTab('governance')}
-                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                  activeTab === 'governance' ? 'bg-white text-purple-900 shadow-xs border border-slate-200 font-bold' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-                <span>Knowledge Governance & Animal Safety Queue</span>
-              </button>
-              <button
-                onClick={() => onSelectTab('analytics')}
-                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                  activeTab === 'analytics' ? 'bg-white text-purple-900 shadow-xs border border-slate-200 font-bold' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Learning Analytics & Drop-off</span>
-              </button>
-              <button
-                onClick={() => onSelectTab('safety_logs')}
-                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                  activeTab === 'safety_logs' ? 'bg-white text-purple-900 shadow-xs border border-slate-200 font-bold' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Bot className="w-3.5 h-3.5 text-rose-600" />
-                <span>AI Veterinary & Safety Intercept Logs</span>
-              </button>
-              <button
-                onClick={() => onSelectTab('flags')}
-                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                  activeTab === 'flags' ? 'bg-white text-purple-900 shadow-xs border border-slate-200 font-bold' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Target className="w-3.5 h-3.5 text-cyan-600" />
-                <span>System Feature Flags</span>
-              </button>
-            </>
+            <div className="flex items-center justify-between w-full py-1 text-xs">
+              <div className="flex items-center gap-2 font-bold text-purple-900">
+                <ShieldCheck className="w-4 h-4 text-purple-600" />
+                <span>WarrenWise Root Administrator Dashboard</span>
+                <span className="text-[10px] bg-purple-100 text-purple-800 font-semibold px-2 py-0.5 rounded-full border border-purple-200">
+                  Authorized to Jmounts
+                </span>
+              </div>
+              <span className="text-[10px] bg-emerald-50 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                🔒 Protected Root Realm
+              </span>
+            </div>
           )}
         </div>
       </div>

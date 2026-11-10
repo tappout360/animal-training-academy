@@ -37,6 +37,10 @@ export function verifyParentPin(enteredPin, savedPin = '4444') {
   return String(enteredPin).trim() === String(savedPin).trim();
 }
 
+export function verifyCoachCode(enteredCode, savedCode = '2222') {
+  return String(enteredCode).trim() === String(savedCode).trim();
+}
+
 export function canCoachAccessLearner(learner, coachId) {
   if (!learner) return false;
   // Coach access requires explicit assignment and parent consent

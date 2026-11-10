@@ -15,8 +15,7 @@ import MasteryMap from './components/learner/MasteryMap';
 import MyAchievements from './components/certificates/MyAchievements';
 import WarrenWiseTrainerModal from './components/ai/WarrenWiseTrainerModal';
 import CoachDashboard from './components/coach/CoachDashboard';
-import ContentGovernanceHub from './components/governance/ContentGovernanceHub';
-import AdminControlCenter from './components/admin/AdminControlCenter';
+import AdminPortal from './components/admin/AdminPortal';
 import HerdTrailQuest from './components/game/HerdTrailQuest';
 import YouthSessionGuard from './components/common/YouthSessionGuard';
 import ParentControlCenter from './components/parent/ParentControlCenter';
@@ -75,7 +74,15 @@ export default function App() {
       return;
     }
 
-    // Switching into parent, coach, or admin requires PIN / credentials verification
+    // Switching into separate Administrator Command Dashboard (dedicated Jmounts credentials)
+    if (newRole === 'admin') {
+      setActiveRole('admin');
+      setActiveLessonModule(null);
+      setActiveQuizModule(null);
+      return;
+    }
+
+    // Switching into parent or coach requires PIN / code verification
     setGateTargetRole(newRole);
   };
 
@@ -86,7 +93,6 @@ export default function App() {
     setActiveQuizModule(null);
     if (authenticatedRole === 'parent') setActiveTab('parent_controls');
     else if (authenticatedRole === 'coach') setActiveTab('roster');
-    else if (authenticatedRole === 'admin') setActiveTab('governance');
   };
 
   const currentPack = getSpeciesPackById(selectedSpeciesId);
@@ -284,22 +290,16 @@ export default function App() {
           />
         )}
 
-        {/* Administrator Command Center Experience */}
+        {/* Separate Root Administrator Command Dashboard (Jmounts) */}
         {activeRole === 'admin' && (
-          <div className="space-y-6">
-            {activeTab === 'governance' ? (
-              <ContentGovernanceHub
-                governanceItems={governanceItems}
-                onUpdateItem={handleUpdateGovernance}
-              />
-            ) : (
-              <AdminControlCenter
-                featureFlags={featureFlags}
-                onToggleFlag={(k, v) => setFeatureFlags(prev => ({ ...prev, [k]: v }))}
-                aiAuditLogs={aiAuditLogs}
-              />
-            )}
-          </div>
+          <AdminPortal
+            governanceItems={governanceItems}
+            onUpdateGovernance={handleUpdateGovernance}
+            featureFlags={featureFlags}
+            onToggleFlag={(k, v) => setFeatureFlags(prev => ({ ...prev, [k]: v }))}
+            aiAuditLogs={aiAuditLogs}
+            onReturnToYouth={() => handleSelectRole('youth')}
+          />
         )}
       </main>
 
