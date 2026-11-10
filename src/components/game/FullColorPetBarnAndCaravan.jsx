@@ -7,7 +7,7 @@
 // - Hold & Stroke your hand across the pet to Fill With Love!
 // - Drag the Spare Hickory Wheel onto the broken wagon axle & drag the Vet Stethoscope to check gut sounds!
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   Sparkles, Heart, ShieldCheck, Lock, Unlock, Wrench,
   Award, CheckCircle2, Flame, Droplets, Compass, Plus,
@@ -222,12 +222,88 @@ export default function FullColorPetBarnAndCaravan({
   const [loadedPetIds, setLoadedPetIds] = useState(['pet_barnaby_rabbit', 'pet_pippin_cavy']);
   const [activeCheckpointPetId, setActiveCheckpointPetId] = useState('pet_barnaby_rabbit');
 
-  // Active tool selected for rub/drag interaction
+  // Active tool selected for rub/drag interaction & reactive visual bounce
   const [selectedToolId, setSelectedToolId] = useState('feed');
   const [draggedToolId, setDraggedToolId] = useState(null);
+  const [recentActionTool, setRecentActionTool] = useState(null);
   const [isOverDropZone, setIsOverDropZone] = useState(false);
   const [floatingParticles, setFloatingParticles] = useState([]);
   const lastRubTimeRef = useRef(0);
+
+  // Dynamic merged barn pets (12 default species + store-adopted animals + show-awarded animals)
+  const allBarnPets = useMemo(() => {
+    const defaultPets = [...PERSISTENT_BARN_PETS];
+    
+    // Add adopted pets from Pet Store
+    const adopted = (questState?.adoptedPetsList || []).map(ad => ({
+      id: ad.uniqueId,
+      rank: 1,
+      name: ad.customName || ad.breedName,
+      species: ad.speciesName,
+      speciesId: ad.speciesId,
+      breed: ad.breedName,
+      emoji: ad.emoji || '🐾',
+      difficultyRank: 'Adopted Companion',
+      difficultyBadge: '🌟 Store Champion',
+      projectType: `${ad.speciesName} Project`,
+      spaceNeeds: ad.bodyType || 'Standard',
+      dailyCare: 'Fresh water, measured feed, daily grooming',
+      costLevel: `${ad.cost} Pts`,
+      keyStrengths: ad.specialPerk || 'Eager learner',
+      keyChallenges: 'Requires consistent daily care',
+      coreLearningTopics: 'Nutrition, Grooming, Showmanship',
+      showFocus: 'Official 4-H Breed Class',
+      showmanshipDetails: 'Present square to judge with calm poise',
+      specialNotes: `Color Variety: ${ad.colorName}`,
+      stallTheme: 'from-amber-900/60 to-stone-900',
+      accentBadge: 'Adopted Pet',
+      ribbonsWon: '4-H Project Partner',
+      foodEmoji: '🌾',
+      foodLabel: 'Balanced Rations',
+      specialEmoji: '🌟',
+      specialCareName: 'Condition Check',
+      specialCareTool: 'Health Exam',
+      specialCareWhy: ad.specialPerk || 'High vitality',
+      cautionRule: 'Ensure fresh clean water and daily check'
+    }));
+
+    // Add awarded pets from Championship Show Ring
+    const awarded = (questState?.awardedShowAnimals || []).map(aw => ({
+      id: aw.id,
+      rank: 1,
+      name: aw.officialName,
+      species: aw.species,
+      speciesId: aw.species?.toLowerCase().includes('cavy') ? 'cavies' : 'rabbits',
+      breed: aw.breed,
+      emoji: '🏆',
+      difficultyRank: 'Grand Champion Honor',
+      difficultyBadge: '🏅 Official Show Award',
+      projectType: 'Championship Show Ring',
+      spaceNeeds: 'Royal Stalls',
+      dailyCare: 'Primacy feed, silk brushing, championship poise',
+      costLevel: 'Earned with Honors',
+      keyStrengths: aw.specialPerk,
+      keyChallenges: 'Preserve peak condition for regional finals',
+      coreLearningTopics: 'Standard of Perfection Defense',
+      showFocus: aw.placement,
+      showmanshipDetails: 'Immaculate presentation and calm table trust',
+      specialNotes: `Awarded by ${aw.judgeName} with Score ${aw.score}/100`,
+      stallTheme: 'from-purple-950/80 to-stone-900',
+      accentBadge: 'Show Award Winner',
+      ribbonsWon: aw.ribbon,
+      foodEmoji: '🌾',
+      foodLabel: 'Championship Feed',
+      specialEmoji: '🏆',
+      specialCareName: 'Rosette Inspection',
+      specialCareTool: 'Rosette Polish',
+      specialCareWhy: aw.specialPerk,
+      cautionRule: 'Maintain pristine table composure'
+    }));
+
+    const petMap = new Map();
+    [...defaultPets, ...adopted, ...awarded].forEach(p => petMap.set(p.id, p));
+    return Array.from(petMap.values());
+  }, [questState?.adoptedPetsList, questState?.awardedShowAnimals]);
 
   // Persistent per-pet care state in the barn & on trail
   const [petStats, setPetStats] = useState(() => {
@@ -273,8 +349,20 @@ export default function FullColorPetBarnAndCaravan({
   const selectedTrail = TEN_TRAIL_PROGRESSION.find(t => t.trailNumber === selectedTrailNum) || TEN_TRAIL_PROGRESSION[0];
   const totalUnlockedCages = Math.min(6, selectedTrail.unlockedCages + bonusUnlockedCages);
 
-  const activePet = PERSISTENT_BARN_PETS.find(p => p.id === activeCheckpointPetId) || PERSISTENT_BARN_PETS[0];
-  const activePetStat = petStats[activePet.id] || petStats.pet_barnaby_rabbit;
+  const activePet = allBarnPets.find(p => p.id === activeCheckpointPetId) || allBarnPets[0];
+  const activePetStat = petStats[activePet.id] || {
+    fullness: 65, hydration: 60, coat: 62, hygiene: 55, bond: 70, specialProgress: 50, stress: 18,
+    dirtSpots: [
+      { id: 1, x: 25, y: 65, cleaned: false },
+      { id: 2, x: 55, y: 72, cleaned: false },
+      { id: 3, x: 75, y: 62, cleaned: false }
+    ],
+    droppings: [
+      { id: 1, x: 20, y: 82, cleaned: false },
+      { id: 2, x: 48, y: 85, cleaned: false },
+      { id: 3, x: 78, y: 80, cleaned: false }
+    ]
+  };
 
   const triggerToast = (msg) => {
     setLiveToast(msg);
@@ -291,10 +379,25 @@ export default function FullColorPetBarnAndCaravan({
 
   // Core handler when a tool is dropped or rubbed on the active pet
   const applyToolToPet = (petId, toolId, increment = 25) => {
-    const pet = PERSISTENT_BARN_PETS.find(p => p.id === petId) || activePet;
+    const pet = allBarnPets.find(p => p.id === petId) || activePet;
+
+    setRecentActionTool(toolId);
+    setTimeout(() => setRecentActionTool(null), 1200);
 
     setPetStats(prev => {
-      const cur = prev[pet.id];
+      const cur = prev[pet.id] || {
+        fullness: 65, hydration: 60, coat: 62, hygiene: 55, bond: 70, specialProgress: 50, stress: 18,
+        dirtSpots: [
+          { id: 1, x: 25, y: 65, cleaned: false },
+          { id: 2, x: 55, y: 72, cleaned: false },
+          { id: 3, x: 75, y: 62, cleaned: false }
+        ],
+        droppings: [
+          { id: 1, x: 20, y: 82, cleaned: false },
+          { id: 2, x: 48, y: 85, cleaned: false },
+          { id: 3, x: 78, y: 80, cleaned: false }
+        ]
+      };
       const next = { ...cur };
 
       if (toolId === 'feed') {
@@ -396,7 +499,7 @@ export default function FullColorPetBarnAndCaravan({
       setLoadedPetIds(updated);
       setActiveCheckpointPetId(petId);
       soundEffects.playSuccessChime();
-      const petObj = PERSISTENT_BARN_PETS.find(p => p.id === petId);
+      const petObj = allBarnPets.find(p => p.id === petId);
       triggerToast(`Loaded ${petObj?.name} (${petObj?.species}) into Wagon Cage #${updated.length}!`);
     }
   };
@@ -477,7 +580,7 @@ export default function FullColorPetBarnAndCaravan({
 
           {/* Switch Active Pet Pill Selector */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            {PERSISTENT_BARN_PETS.map(p => (
+            {allBarnPets.map(p => (
               <button
                 key={p.id}
                 type="button"
@@ -493,6 +596,11 @@ export default function FullColorPetBarnAndCaravan({
               >
                 <span className="text-base">{p.emoji}</span>
                 <span>{p.name}</span>
+                {p.accentBadge && (
+                  <span className="text-[9px] bg-black/40 text-amber-200 px-1 py-0.2 rounded-full font-normal">
+                    {p.accentBadge.split(' ')[0]}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -632,8 +740,9 @@ export default function FullColorPetBarnAndCaravan({
                   <DynamicAnimalVisualAvatar
                     stateKey={getDominantState(activePetStat)}
                     petName={activePet.name}
-                    speciesId={activePet.id.replace('pet_', '').replace('_rabbit', 'rabbits').replace('_cavy', 'cavies')}
+                    speciesId={activePet.speciesId || activePet.species || activePet.id}
                     speciesEmoji={activePet.emoji}
+                    recentActionTool={recentActionTool}
                     onPetClick={() => applyToolToPet(activePet.id, selectedToolId, 15)}
                   />
                 </div>
@@ -861,8 +970,8 @@ export default function FullColorPetBarnAndCaravan({
           {[1, 2, 3, 4, 5, 6].map((slotNum, idx) => {
             const isSlotUnlocked = slotNum <= totalUnlockedCages;
             const petId = loadedPetIds[idx];
-            const pet = petId ? PERSISTENT_BARN_PETS.find(p => p.id === petId) : null;
-            const stats = pet ? petStats[pet.id] : null;
+            const pet = petId ? allBarnPets.find(p => p.id === petId) : null;
+            const stats = pet ? (petStats[pet.id] || { fullness: 65, hydration: 60, coat: 62, hygiene: 55, bond: 70, specialProgress: 50 }) : null;
 
             return (
               <div
@@ -950,9 +1059,16 @@ export default function FullColorPetBarnAndCaravan({
 
         {/* Grid of Full-Color Barn Stalls */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {PERSISTENT_BARN_PETS.map(pet => {
+          {allBarnPets.map(pet => {
             const isLoaded = loadedPetIds.includes(pet.id);
-            const stats = petStats[pet.id];
+            const stats = petStats[pet.id] || {
+              fullness: 65,
+              hydration: 60,
+              coat: 62,
+              hygiene: 55,
+              bond: 70,
+              specialProgress: 50
+            };
 
             return (
               <div
