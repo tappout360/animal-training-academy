@@ -8,10 +8,13 @@ export default defineConfig({
     open: false
   },
   build: {
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks(id) {
+          if (id.includes('node_modules/@clerk')) {
+            return 'vendor-clerk';
+          }
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
             return 'vendor-react';
           }
@@ -24,8 +27,11 @@ export default defineConfig({
           if (id.includes('src/data/speciesPacks')) {
             return 'species-curricula';
           }
-          if (id.includes('src/data/game')) {
+          if (id.includes('src/data/game') || id.includes('src/data/speciesKnowledgeCards')) {
             return 'game-catalog';
+          }
+          if (id.includes('src/components/game')) {
+            return 'game-components';
           }
         }
       }
