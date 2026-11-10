@@ -2288,15 +2288,59 @@ test('Local-First Dexie default & optional Cloud Sync metadata lifecycle', () =>
 test('Interactive Pet Store pricing, 12 species catalog, and bonus trivia coin rewards are balanced', () => {
   assert.strictEqual(PET_STORE_BREEDS.length, 12, 'Pet Store must carry all 12 official 4-H species projects');
 
+  // Verify total breed count is 80 (Top 10 Rabbits, Top 10 Cavies, Top 6 for remaining 10 species)
+  const totalBreeds = PET_STORE_BREEDS.reduce((acc, s) => acc + s.breeds.length, 0);
+  assert.strictEqual(totalBreeds, 80, 'Pet Store must carry exactly 80 authentic breeds');
+
+  // Verify Top 10 Rabbit Breeds including New Zealands
+  const rabbitSpecies = PET_STORE_BREEDS.find(s => s.speciesId === 'rabbits');
+  assert.ok(rabbitSpecies, 'Rabbits must be in the store catalog');
+  assert.strictEqual(rabbitSpecies.breeds.length, 10, 'Must have top 10 rabbit breeds');
+  const nzBreed = rabbitSpecies.breeds.find(b => b.id === 'rabbit_new_zealand');
+  assert.ok(nzBreed, 'New Zealand breed must be present in Top 10 Rabbits');
+  assert.strictEqual(nzBreed.name, 'New Zealand');
+  assert.ok(nzBreed.bodyType.includes('Commercial'));
+  assert.ok(nzBreed.colors.some(c => c.name.includes('White')));
+  assert.ok(nzBreed.colors.some(c => c.name.includes('Red')));
+  assert.ok(nzBreed.colors.some(c => c.name.includes('Black')));
+
+  // Verify Top 10 Guinea Pig (Cavy) Breeds
+  const cavySpecies = PET_STORE_BREEDS.find(s => s.speciesId === 'cavies');
+  assert.ok(cavySpecies, 'Cavies must be in the store catalog');
+  assert.strictEqual(cavySpecies.breeds.length, 10, 'Must have top 10 cavy breeds');
+
+  // Verify Top 6 breeds for all other 10 species
+  const otherSpecies = PET_STORE_BREEDS.filter(s => s.speciesId !== 'rabbits' && s.speciesId !== 'cavies');
+  assert.strictEqual(otherSpecies.length, 10);
+  otherSpecies.forEach(s => {
+    assert.strictEqual(s.breeds.length, 6, `${s.speciesName} must have top 6 breeds`);
+  });
+
   // Verify Rabbit pricing & color genetics
-  const rabbit = PET_STORE_BREEDS.find(b => b.speciesId === 'rabbits');
-  assert.ok(rabbit, 'Rabbits must be in the store catalog');
+  const rabbit = rabbitSpecies;
   assert.strictEqual(rabbit.requiredTrail, 1);
   const baseRabbitPrice = calculatePetPrice('rabbits', 'rabbit_holland_lop', 'tortoise');
   assert.strictEqual(baseRabbitPrice, 150, 'Standard Holland Lop Tortoise must cost 150 points');
 
   const grandChampPrice = calculatePetPrice('rabbits', 'rabbit_holland_lop', 'pure_frosty');
   assert.strictEqual(grandChampPrice, 240, 'Grand Champion Frosty variety must apply +90 modifier');
+
+  // Verify Show Ring Reward Animal Generation on High Grades (>= 85 score)
+  const highGradeEval = TrailQuestEngine.evaluateShowRing({
+    activeTrailPackId: 'rabbit_trail_1',
+    showQuality: { coatCondition: 95, vigorHydration: 95, temperament: 95, cleanliness: 95, poseTraining: 95 },
+    petCareCounts: { feed: 5, water: 5, brush: 5, clean_up: 5, fill_with_love: 5 }
+  }, {
+    stationScore: 35,
+    handlingScore: 30,
+    judgeQAScore: 33
+  });
+
+  assert.ok(highGradeEval.totalScore >= 85, 'Must achieve high grade');
+  assert.ok(highGradeEval.awardRecord.awardedAnimal, 'High grade must award an official show animal');
+  assert.strictEqual(highGradeEval.awardRecord.awardedAnimal.isOfficialShowAward, true);
+  assert.ok(highGradeEval.awardRecord.awardedAnimal.officialName.includes('Champion'));
+  assert.ok(highGradeEval.updatedState.awardedShowAnimals.length >= 1, 'Updated state must store awarded show animal in trophy cabinet');
 
   // Verify Trail CompleteNode calculates bonus trivia coins
   const startState = TrailQuestEngine.loadState('test_bonus_coins_learner');

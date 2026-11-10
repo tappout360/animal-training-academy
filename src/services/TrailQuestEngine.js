@@ -1067,6 +1067,38 @@ export class TrailQuestEngine {
     const certYear = new Date().getFullYear();
     const certCode = Math.random().toString(36).substring(2, 7).toUpperCase();
 
+    let awardedAnimal = null;
+    if (totalScore >= 85) {
+      const packId = state.activeTrailPackId || 'rabbit';
+      const prefix = totalScore >= 95 ? 'Grand Champion' : (totalScore >= 90 ? 'Reserve Champion' : 'Blue Ribbon Champion');
+      const honoraryTitles = [
+        'Sovereign Sterling', 'Rosette Clover', 'Royal Blue Belle', 'Golden Paragon', 
+        'Meadow Starlight', 'Heritage Valor', 'Pioneer Triumph', 'Majestic Ember'
+      ];
+      const chosenTitle = honoraryTitles[Math.floor(Math.random() * honoraryTitles.length)];
+      const officialName = `${prefix} ${chosenTitle}`;
+      
+      const speciesLabel = packId.includes('rabbit') ? 'Rabbit' : (packId.includes('cavy') ? 'Cavy' : 'Frontier Champion');
+      const breedLabel = totalScore >= 95 ? 'Purebred Grand Champion Line' : 'Master Showmanship Distinction';
+      const colorHex = totalScore >= 95 ? '#7B1FA2' : (totalScore >= 90 ? '#303F9F' : '#1976D2');
+
+      awardedAnimal = {
+        id: `award_pet_${Date.now()}`,
+        officialName,
+        placement,
+        ribbon,
+        score: totalScore,
+        species: speciesLabel,
+        breed: breedLabel,
+        colorHex,
+        isOfficialShowAward: true,
+        earnedAt: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+        certificateId: `WW-SHOW-CERT-${certYear}-${certCode}`,
+        judgeName: 'Judge Margaret Miller',
+        specialPerk: 'Honorary Champion: 100% immune to ring jitters and provides +20 Herd Readiness boost'
+      };
+    }
+
     const awardRecord = {
       id: `award_${Date.now()}`,
       certificateId: `WW-SHOW-CERT-${certYear}-${certCode}`,
@@ -1091,6 +1123,7 @@ export class TrailQuestEngine {
       herdReadiness: readinessScore,
       showAdvantageTier: readinessAdvantage.tier,
       showAdvantageMultiplier: readinessAdvantage.multiplier,
+      awardedAnimal,
       judgeFeedback: totalScore >= 90
         ? `Superb demonstration of 4-H husbandry! Coat sheen, hydration, table composure, and oral standard defense are outstanding.${
             readinessAdvantage.judgeRemark ? ` ${readinessAdvantage.judgeRemark}` : ''
@@ -1113,13 +1146,18 @@ export class TrailQuestEngine {
 
     const completedPacks = Array.from(new Set([...(state.completedTrailPackIds || []), state.activeTrailPackId]));
 
+    const awardedAnimals = awardedAnimal
+      ? [awardedAnimal, ...(state.awardedShowAnimals || [])]
+      : (state.awardedShowAnimals || []);
+
     const updated = {
       ...state,
       trailCompleted: true,
       currentMile: 100,
       completedTrailPackIds: completedPacks,
       earnedRibbons: [awardRecord, ...(state.earnedRibbons || [])],
-      careerLog: [careerLogEntry, ...(state.careerLog || [])]
+      careerLog: [careerLogEntry, ...(state.careerLog || [])],
+      awardedShowAnimals: awardedAnimals
     };
 
     return {

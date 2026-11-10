@@ -433,6 +433,35 @@ export default function ChampionshipShowRing({
               </div>
             </div>
 
+            {/* Awarded Show Champion Animal Box (High Grades Reward) */}
+            {awardResult.awardedAnimal && (
+              <div className="bg-gradient-to-r from-amber-950/70 via-purple-950/80 to-stone-900 border-2 border-amber-400 p-5 rounded-3xl text-left shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-bounce-subtle">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-stone-950 flex items-center justify-center text-4xl shadow-xl shrink-0 ring-2 ring-white/50">
+                    🏆
+                  </div>
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-400 text-stone-950 text-[10px] font-black uppercase tracking-wider mb-1">
+                      <span>Official Show Reward Animal Won!</span>
+                    </div>
+                    <h4 className="text-xl font-black text-amber-300">
+                      {awardResult.awardedAnimal.officialName}
+                    </h4>
+                    <p className="text-xs text-purple-200">
+                      {awardResult.awardedAnimal.breed} • {awardResult.awardedAnimal.species} (Championship Grade: {awardResult.awardedAnimal.score}/100)
+                    </p>
+                    <p className="text-[11px] text-amber-200/90 mt-1">
+                      🎖️ <strong>Official ARBA/4-H Award:</strong> This honorary champion was earned with high grades! Their championship title is pre-bestowed by Judge Margaret Miller and added to your Show Rewards Cabinet.
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 bg-stone-900/90 border border-amber-400/60 px-4 py-2.5 rounded-2xl text-center shadow-lg">
+                  <div className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Show Merit Status</div>
+                  <div className="text-xs font-black text-emerald-400">Awarded to Barn</div>
+                </div>
+              </div>
+            )}
+
             {/* Notification if shared */}
             {sharedNotice && (
               <div className="bg-emerald-600 text-white text-xs font-bold py-2.5 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg animate-fade-in">

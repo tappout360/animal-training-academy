@@ -267,19 +267,27 @@ export default function InteractivePetStoreModal({
                 </div>
               </div>
 
-              {/* Custom Pet Name Input */}
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-1">
-                  Name Your Champion (Optional)
-                </label>
+              {/* Custom Pet Name Input (Account Holder Choice) */}
+              <div className="bg-amber-50/80 p-3.5 rounded-2xl border border-amber-300 space-y-1.5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-black uppercase tracking-wider text-amber-950">
+                    Account Holder: Name Your Animal
+                  </label>
+                  <span className="text-[10px] text-amber-800 font-black bg-amber-200/60 px-2 py-0.5 rounded-full">
+                    Your Choice!
+                  </span>
+                </div>
                 <input
                   type="text"
-                  maxLength={24}
+                  maxLength={28}
                   value={customPetName}
                   onChange={(e) => setCustomPetName(e.target.value)}
-                  placeholder={`e.g. ${currentBreed.name} Star`}
-                  className="w-full text-xs font-bold py-2.5 px-3.5 rounded-xl border border-stone-300 bg-stone-50 focus:outline-amber-600"
+                  placeholder={`e.g. My Champion ${currentBreed.name}`}
+                  className="w-full text-xs font-bold py-2.5 px-3.5 rounded-xl border border-amber-300 bg-white text-stone-900 focus:outline-amber-600 shadow-xs"
                 />
+                <p className="text-[10px] text-stone-600 leading-normal">
+                  💡 <strong>Naming Policy:</strong> You choose the name for all store-adopted project animals! (Except for honorary animals won by scoring high grades in the Championship Show Ring, which arrive with their official title pre-bestowed by the judges in the Rewards Cabinet).
+                </p>
               </div>
 
             </div>

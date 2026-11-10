@@ -632,6 +632,7 @@ export default function FullColorPetBarnAndCaravan({
                   <DynamicAnimalVisualAvatar
                     stateKey={getDominantState(activePetStat)}
                     petName={activePet.name}
+                    speciesId={activePet.id.replace('pet_', '').replace('_rabbit', 'rabbits').replace('_cavy', 'cavies')}
                     speciesEmoji={activePet.emoji}
                     onPetClick={() => applyToolToPet(activePet.id, selectedToolId, 15)}
                   />

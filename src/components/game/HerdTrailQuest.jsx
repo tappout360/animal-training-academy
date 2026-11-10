@@ -29,6 +29,7 @@ import AnimalCareAnimationModal from './AnimalCareAnimationModal';
 import LiveTrailActionGame from './LiveTrailActionGame';
 import FullColorPetBarnAndCaravan from './FullColorPetBarnAndCaravan';
 import InteractivePetStoreModal from './InteractivePetStoreModal';
+import ShowRewardsCabinetModal from './ShowRewardsCabinetModal';
 
 import { TRAIL_PACKS, getTrailPackById, getAvailableTrailPacks } from '../../data/game/trailPacks';
 import { TrailQuestEngine } from '../../services/TrailQuestEngine';
@@ -57,6 +58,7 @@ export default function HerdTrailQuest({
   const [victoryModalData, setVictoryModalData] = useState(null);
   const [careModalState, setCareModalState] = useState({ isOpen: false, activeAction: 'brush' });
   const [isPetStoreModalOpen, setIsPetStoreModalOpen] = useState(false);
+  const [isShowRewardsModalOpen, setIsShowRewardsModalOpen] = useState(false);
 
   // Accessibility Toggles
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -418,6 +420,18 @@ export default function HerdTrailQuest({
                 OPEN!
               </span>
             )}
+          </button>
+
+          {/* 4B. Official Show Rewards & Trophies Cabinet */}
+          <button
+            onClick={() => { soundEffects.playTap(); setIsShowRewardsModalOpen(true); }}
+            className="px-3.5 py-2 rounded-2xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer bg-gradient-to-r from-purple-800 to-indigo-900 text-purple-100 hover:from-purple-700 hover:to-indigo-800 shadow-xs border border-purple-500/50"
+          >
+            <Trophy className="w-4 h-4 text-amber-300" />
+            <span>Show Rewards</span>
+            <span className="bg-amber-400 text-stone-950 text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold">
+              {(questState.awardedShowAnimals?.length || 0)} Won
+            </span>
           </button>
 
           {/* 5. Family Barn Board */}
@@ -900,6 +914,25 @@ export default function HerdTrailQuest({
         onRerunTrail={(trailNum) => {
           const targetPack = TRAIL_PACKS.find(p => p.trailNumber === trailNum) || TRAIL_PACKS[0];
           handleSelectTrailPack(targetPack.id);
+        }}
+      />
+
+      {/* Official 4-H & ARBA Show Rewards & Trophies Cabinet */}
+      <ShowRewardsCabinetModal
+        isOpen={isShowRewardsModalOpen}
+        onClose={() => setIsShowRewardsModalOpen(false)}
+        awardedAnimals={questState.awardedShowAnimals || []}
+        earnedRibbons={questState.earnedRibbons || []}
+        onSelectAwardAnimal={(awardAnimal) => {
+          const updated = {
+            ...questState,
+            activeShowAwardPet: awardAnimal
+          };
+          setQuestState(updated);
+          TrailQuestEngine.saveState(learner.id, updated);
+        }}
+        onPlayShowRing={() => {
+          setActiveTab('showring');
         }}
       />
 
