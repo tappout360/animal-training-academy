@@ -25,6 +25,7 @@ import {
 import { CloudSyncService } from '../src/services/CloudSyncService.js';
 import { PET_STORE_BREEDS, calculatePetPrice } from '../src/data/game/petStoreCatalog.js';
 import { TRAIL_QUESTIONS_AND_BONUSES } from '../src/data/game/trailQuestionsAndBonuses.js';
+import { getDominantState, ANIMAL_VISUAL_STATES } from '../src/services/AnimalVisualStateEngine.js';
 import { AdminAuthService } from '../src/services/AdminAuthService.js';
 import { calculateLearnerMastery } from '../src/services/MasteryEngine.js';
 import { 
@@ -2322,6 +2323,39 @@ test('Interactive Pet Store pricing, 12 species catalog, and bonus trivia coin r
   TRAIL_QUESTIONS_AND_BONUSES.forEach(q => {
     assert.ok(q.bonusQuestion, 'Each challenge question must offer a bonus question');
     assert.ok(q.bonusQuestion.bonusPoints >= 50, 'Bonus points must be at least 50');
+  });
+});
+
+test('AnimalVisualStateEngine accurately evaluates 8 dominant physiological need states', () => {
+  // 1. Hungry takes priority if feed < 40
+  assert.strictEqual(getDominantState({ feed: 30, water: 70, coat: 70, clean: 70, love: 70 }), 'hungry');
+
+  // 2. Thirsty takes priority if water < 40 and feed >= 40
+  assert.strictEqual(getDominantState({ feed: 60, water: 25, coat: 70, clean: 70, love: 70 }), 'thirsty');
+
+  // 3. Messy coat if coat < 45
+  assert.strictEqual(getDominantState({ feed: 70, water: 70, coat: 35, clean: 70, love: 70 }), 'messy');
+
+  // 4. Dirty stall if clean < 45
+  assert.strictEqual(getDominantState({ feed: 70, water: 70, coat: 70, clean: 30, love: 70 }), 'dirty');
+
+  // 5. Sad / lonely if love < 50
+  assert.strictEqual(getDominantState({ feed: 70, water: 70, coat: 70, clean: 70, love: 40 }), 'sad');
+
+  // 6. Show-Ready if all 5 metrics >= 85
+  assert.strictEqual(getDominantState({ feed: 90, water: 90, coat: 90, clean: 90, love: 90 }), 'showReady');
+
+  // 7. Clean & Shiny if coat & clean >= 80
+  assert.strictEqual(getDominantState({ feed: 75, water: 75, coat: 82, clean: 85, love: 75 }), 'clean');
+
+  // 8. Happy default
+  assert.strictEqual(getDominantState({ feed: 70, water: 70, coat: 70, clean: 70, love: 70 }), 'happy');
+
+  // Verify all 8 states exist in configuration dictionary
+  const expectedStates = ['hungry', 'thirsty', 'messy', 'dirty', 'sad', 'happy', 'clean', 'showReady'];
+  expectedStates.forEach(s => {
+    assert.ok(ANIMAL_VISUAL_STATES[s], `Visual state ${s} must be registered`);
+    assert.ok(ANIMAL_VISUAL_STATES[s].speechBubble, `Visual state ${s} must have speech bubble`);
   });
 });
 

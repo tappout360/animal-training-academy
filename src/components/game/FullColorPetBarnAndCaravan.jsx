@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { soundEffects } from '../../utils/audioEffects';
 import { SPECIES_KNOWLEDGE_CARDS } from '../../data/speciesKnowledgeCards';
+import DynamicAnimalVisualAvatar from './DynamicAnimalVisualAvatar';
+import { getDominantState } from '../../services/AnimalVisualStateEngine';
 
 export const TEN_TRAIL_PROGRESSION = [
   {
@@ -625,16 +627,21 @@ export default function FullColorPetBarnAndCaravan({
                   </div>
                 ))}
 
-                {/* Main Animal Character */}
-                <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-white/20 backdrop-blur-xs border-4 border-white/50 flex items-center justify-center text-7xl sm:text-8xl shadow-2xl transition-transform hover:scale-110 active:scale-95">
-                  {activePet.emoji}
+                {/* Main Animal Character - Dynamic Need-State Morphing Avatar */}
+                <div className="w-full max-w-[340px] h-64 sm:h-72 flex items-center justify-center transition-transform hover:scale-[1.02]">
+                  <DynamicAnimalVisualAvatar
+                    stateKey={getDominantState(activePetStat)}
+                    petName={activePet.name}
+                    speciesEmoji={activePet.emoji}
+                    onPetClick={() => applyToolToPet(activePet.id, selectedToolId, 15)}
+                  />
                 </div>
 
-                <div className="mt-2 text-center">
-                  <span className="bg-black/45 text-white text-xs font-black px-3.5 py-1 rounded-full border border-white/20">
+                <div className="mt-1 text-center">
+                  <span className="bg-black/55 text-white text-xs font-black px-3.5 py-1 rounded-full border border-white/20">
                     {compositeReadiness >= 85
-                      ? `🌟 ${activePet.name} is in Peak Championship Bloom!`
-                      : `Drag ${activePet.foodEmoji} Food, 💧 Water, 🪮 Brush & 🧹 Scoop onto ${activePet.name}!`}
+                      ? `🌟 ${activePet.name} is in Peak Championship Bloom! (${compositeReadiness}%)`
+                      : `Dominant Need: ${getDominantState(activePetStat).toUpperCase()} · Drag matching tool to restore!`}
                   </span>
                 </div>
 
