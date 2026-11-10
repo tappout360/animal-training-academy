@@ -529,7 +529,8 @@ export class TrailQuestEngine {
     conditionDelta = 0,
     suppliesDelta = {},
     bondXpDelta = 20,
-    division = 'junior'
+    division = 'junior',
+    bonusCoinsWon = 0
   }) {
     const updated = { ...state };
 
@@ -628,7 +629,7 @@ export class TrailQuestEngine {
 
     updated.supplies = newSupplies;
     updated.showQuality = currentQuality;
-    updated.trailPoints = (updated.trailPoints || 0) + earnedPoints;
+    updated.trailPoints = (updated.trailPoints || 0) + earnedPoints + (bonusCoinsWon || 0);
 
     // Update Wagon Integrity and Camp Comfort with trail friction
     const currentWagon = { ...(updated.wagonStatus || DEFAULT_QUEST_STATE.wagonStatus) };

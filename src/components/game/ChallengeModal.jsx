@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import FairDaySimFinale from './FairDaySimFinale';
 import { shuffleObjectOptions } from '../../utils/quizUtils';
+import { TRAIL_QUESTIONS_AND_BONUSES } from '../../data/game/trailQuestionsAndBonuses';
 
 export default function ChallengeModal({
   node,
@@ -21,6 +22,23 @@ export default function ChallengeModal({
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showAiHint, setShowAiHint] = useState(false);
+
+  // Bonus Trivia Question Extension
+  const [bonusQ, setBonusQ] = useState(null);
+  const [selectedBonusOptionIndex, setSelectedBonusOptionIndex] = useState(null);
+  const [bonusAnswered, setBonusAnswered] = useState(false);
+  const [bonusCoinsWon, setBonusCoinsWon] = useState(0);
+
+  useEffect(() => {
+    // Pick a matching or random bonus question to give extra coin opportunities!
+    if (node) {
+      const match = TRAIL_QUESTIONS_AND_BONUSES.find(q => q.speciesId === trailPack?.id) || TRAIL_QUESTIONS_AND_BONUSES[0];
+      setBonusQ(match?.bonusQuestion || null);
+      setSelectedBonusOptionIndex(null);
+      setBonusAnswered(false);
+      setBonusCoinsWon(0);
+    }
+  }, [node?.id, trailPack?.id]);
   
   // Mixed-up options so correct answer is not always in the same position
   const displayOptions = useMemo(() => {
@@ -133,7 +151,8 @@ export default function ChallengeModal({
       isCorrect,
       conditionDelta,
       suppliesDelta,
-      bondXpDelta
+      bondXpDelta: isCorrect ? (bondXpDelta + (bonusCoinsWon > 0 ? 15 : 0)) : bondXpDelta,
+      bonusCoinsWon
     });
   };
 
@@ -376,6 +395,72 @@ export default function ChallengeModal({
               )}
             </div>
             <p>{selectedOpt.feedback || selectedOpt.effect?.feedback || 'Your animal stewardship decision has been recorded on the trail.'}</p>
+          </div>
+        )}
+
+        {/* BONUS QUESTION SECTION (Earn extra coins/points for guessing right!) */}
+        {hasSubmitted && bonusQ && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 space-y-3 animate-fadeIn">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-black uppercase text-amber-900">
+                <Sparkles className="w-4 h-4 text-amber-600 animate-spin" />
+                <span>Bonus Trivia Opportunity! (+{bonusQ.bonusPoints} Extra Trail Coins)</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-950">
+                Optional Speed Boost
+              </span>
+            </div>
+
+            <div className="text-xs font-bold text-stone-800 leading-snug">
+              {bonusQ.prompt}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              {bonusQ.options.map((optText, bIdx) => {
+                const isSelected = selectedBonusOptionIndex === bIdx;
+                const isCorrect = bIdx === bonusQ.correctIndex;
+                let btnStyle = 'bg-white hover:bg-stone-50 border-stone-200 text-stone-800';
+
+                if (bonusAnswered) {
+                  if (isCorrect) {
+                    btnStyle = 'bg-emerald-600 text-white font-bold border-emerald-700 shadow-xs';
+                  } else if (isSelected && !isCorrect) {
+                    btnStyle = 'bg-rose-100 text-rose-800 border-rose-300';
+                  }
+                } else if (isSelected) {
+                  btnStyle = 'bg-amber-500 text-stone-950 font-bold';
+                }
+
+                return (
+                  <button
+                    key={bIdx}
+                    type="button"
+                    disabled={bonusAnswered}
+                    onClick={() => {
+                      setSelectedBonusOptionIndex(bIdx);
+                      setBonusAnswered(true);
+                      if (bIdx === bonusQ.correctIndex) {
+                        setBonusCoinsWon(bonusQ.bonusPoints);
+                      }
+                    }}
+                    className={`p-2.5 rounded-xl border text-xs text-left transition cursor-pointer flex items-center justify-between ${btnStyle}`}
+                  >
+                    <span>{optText}</span>
+                    {bonusAnswered && isCorrect && <CheckCircle2 className="w-4 h-4 text-white" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {bonusAnswered && (
+              <div className={`text-xs font-black text-center pt-1 ${
+                bonusCoinsWon > 0 ? 'text-emerald-700' : 'text-stone-500'
+              }`}>
+                {bonusCoinsWon > 0 
+                  ? `🎉 Correct! Banked +${bonusCoinsWon} Extra Trail Coins toward your next Pet Store adoption!` 
+                  : 'Good try! Keep studying to nail the bonus next trail!'}
+              </div>
+            )}
           </div>
         )}
 

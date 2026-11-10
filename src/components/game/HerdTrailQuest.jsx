@@ -28,6 +28,7 @@ import HerdStoryLog from './livingHerd/HerdStoryLog';
 import AnimalCareAnimationModal from './AnimalCareAnimationModal';
 import LiveTrailActionGame from './LiveTrailActionGame';
 import FullColorPetBarnAndCaravan from './FullColorPetBarnAndCaravan';
+import InteractivePetStoreModal from './InteractivePetStoreModal';
 
 import { TRAIL_PACKS, getTrailPackById, getAvailableTrailPacks } from '../../data/game/trailPacks';
 import { TrailQuestEngine } from '../../services/TrailQuestEngine';
@@ -55,6 +56,7 @@ export default function HerdTrailQuest({
   const [streakModalData, setStreakModalData] = useState(null);
   const [victoryModalData, setVictoryModalData] = useState(null);
   const [careModalState, setCareModalState] = useState({ isOpen: false, activeAction: 'brush' });
+  const [isPetStoreModalOpen, setIsPetStoreModalOpen] = useState(false);
 
   // Accessibility Toggles
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -138,7 +140,8 @@ export default function HerdTrailQuest({
     isCorrect,
     conditionDelta,
     suppliesDelta,
-    bondXpDelta
+    bondXpDelta,
+    bonusCoinsWon = 0
   }) => {
     const prevBondLevel = questState.herdBond?.level || 1;
 
@@ -156,7 +159,8 @@ export default function HerdTrailQuest({
       conditionDelta,
       suppliesDelta,
       bondXpDelta,
-      division: activeDivision
+      division: activeDivision,
+      bonusCoinsWon
     });
 
     setQuestState(updatedState);
@@ -349,6 +353,18 @@ export default function HerdTrailQuest({
           >
             <span>🏡</span>
             <span>Pet Barn, 10 Trails &amp; Drag Care</span>
+          </button>
+
+          {/* 1C. Official 4-H Pet Store & Breed Adoption Center */}
+          <button
+            onClick={() => { soundEffects.playTap(); setIsPetStoreModalOpen(true); }}
+            className="px-3.5 py-2 rounded-2xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-xs hover:from-amber-600 hover:to-orange-700 animate-pulse"
+          >
+            <span>🐾</span>
+            <span>Breed Pet Store</span>
+            <span className="bg-stone-950/80 text-amber-300 text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold">
+              Adopt
+            </span>
           </button>
 
           {/* 2. Living Trail Movement */}
@@ -860,6 +876,32 @@ export default function HerdTrailQuest({
           onOpenOutfitter={() => setActiveTab('outfitter')}
         />
       )}
+
+      {/* Official 4-H Pet Store & Breed Adoption Modal */}
+      <InteractivePetStoreModal
+        isOpen={isPetStoreModalOpen}
+        onClose={() => setIsPetStoreModalOpen(false)}
+        currentCoins={questState.trailPoints || 0}
+        completedTrails={questState.completedTrails || [1]}
+        purchasedPets={questState.purchasedPets || ['pet_barnaby_rabbit']}
+        onAdoptPet={(adoptedRecord) => {
+          const nextPoints = Math.max(0, (questState.trailPoints || 0) - adoptedRecord.cost);
+          const nextPurchasedPets = Array.from(new Set([...(questState.purchasedPets || []), adoptedRecord.uniqueId]));
+          const nextAdoptedRecords = [...(questState.adoptedPetsList || []), adoptedRecord];
+          const updated = {
+            ...questState,
+            trailPoints: nextPoints,
+            purchasedPets: nextPurchasedPets,
+            adoptedPetsList: nextAdoptedRecords
+          };
+          setQuestState(updated);
+          TrailQuestEngine.saveState(learner.id, updated);
+        }}
+        onRerunTrail={(trailNum) => {
+          const targetPack = TRAIL_PACKS.find(p => p.trailNumber === trailNum) || TRAIL_PACKS[0];
+          handleSelectTrailPack(targetPack.id);
+        }}
+      />
 
       {/* Permanent Independent Educational Disclaimer */}
       <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs text-slate-500 leading-relaxed font-medium">

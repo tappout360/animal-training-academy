@@ -23,6 +23,8 @@ import {
   resetSecurityCredentialsToDefaults
 } from '../src/services/YouthSafetyService.js';
 import { CloudSyncService } from '../src/services/CloudSyncService.js';
+import { PET_STORE_BREEDS, calculatePetPrice } from '../src/data/game/petStoreCatalog.js';
+import { TRAIL_QUESTIONS_AND_BONUSES } from '../src/data/game/trailQuestionsAndBonuses.js';
 import { AdminAuthService } from '../src/services/AdminAuthService.js';
 import { calculateLearnerMastery } from '../src/services/MasteryEngine.js';
 import { 
@@ -2280,6 +2282,47 @@ test('Local-First Dexie default & optional Cloud Sync metadata lifecycle', () =>
   const updatedMeta = CloudSyncService.getLocalSyncMeta();
   assert.strictEqual(updatedMeta.status, 'synced');
   assert.strictEqual(updatedMeta.autoSyncEnabled, true);
+});
+
+test('Interactive Pet Store pricing, 12 species catalog, and bonus trivia coin rewards are balanced', () => {
+  assert.strictEqual(PET_STORE_BREEDS.length, 12, 'Pet Store must carry all 12 official 4-H species projects');
+
+  // Verify Rabbit pricing & color genetics
+  const rabbit = PET_STORE_BREEDS.find(b => b.speciesId === 'rabbits');
+  assert.ok(rabbit, 'Rabbits must be in the store catalog');
+  assert.strictEqual(rabbit.requiredTrail, 1);
+  const baseRabbitPrice = calculatePetPrice('rabbits', 'rabbit_holland_lop', 'tortoise');
+  assert.strictEqual(baseRabbitPrice, 150, 'Standard Holland Lop Tortoise must cost 150 points');
+
+  const grandChampPrice = calculatePetPrice('rabbits', 'rabbit_holland_lop', 'pure_frosty');
+  assert.strictEqual(grandChampPrice, 240, 'Grand Champion Frosty variety must apply +90 modifier');
+
+  // Verify Trail CompleteNode calculates bonus trivia coins
+  const startState = TrailQuestEngine.loadState('test_bonus_coins_learner');
+  const basePoints = startState.trailPoints || 0;
+
+  const result = TrailQuestEngine.completeNode({
+    state: startState,
+    nodeId: 'test_node_bonus',
+    mile: 20,
+    isCorrect: true,
+    bonusCoinsWon: 65,
+    division: 'junior'
+  });
+
+  assert.ok(result.earnedPoints >= 80, 'Must award base points for correct answer');
+  assert.strictEqual(
+    result.updatedState.trailPoints, 
+    basePoints + result.earnedPoints + 65, 
+    'Trail points must correctly credit +65 bonus trivia coins'
+  );
+
+  // Verify trail questions bank has bonus questions
+  assert.ok(TRAIL_QUESTIONS_AND_BONUSES.length >= 5);
+  TRAIL_QUESTIONS_AND_BONUSES.forEach(q => {
+    assert.ok(q.bonusQuestion, 'Each challenge question must offer a bonus question');
+    assert.ok(q.bonusQuestion.bonusPoints >= 50, 'Bonus points must be at least 50');
+  });
 });
 
 test('Zero-Jank debounced batch save preserves main thread responsiveness and persists state accurately', (done) => {
