@@ -259,7 +259,11 @@ export default function FullColorPetBarnAndCaravan({
     wheel: false,    // Broken Wheel in Gulch -> Fixed Hickory Wheel & Rolling Wagon
     storm: false,    // Freezing Rain & Torn Roof -> Warm Dry Oilcloth Tent & Lantern
     bear: false,     // Bear-Smashed Tailgate -> Iron-Bound Tailgate & Bear-Proof Vault
-    sickness: false  // Hunched GI Slowdown -> Vet-Cleared Bright-Eyed Champion
+    sickness: false, // Hunched GI Slowdown -> Vet-Cleared Bright-Eyed Champion
+    flood: false,    // Sinking River Rapid -> Caulked Pitch Box & Rope Haul
+    heat: false,     // 104°F Heatwave -> Silver Reflective Canopy & Chilled Tiles
+    wolf: false,     // Wolf Night Prowl -> Kerosene Lanterns & Brass Carabiners
+    weed: false      // Toxic Hemlock Alert -> Certified Timothy Hay Racks
   });
   const [openKnowledgeCardId, setOpenKnowledgeCardId] = useState(null);
   const [liveToast, setLiveToast] = useState(null);
@@ -1468,6 +1472,354 @@ export default function FullColorPetBarnAndCaravan({
               </div>
               <span className="text-[11px] text-stone-300 font-bold">
                 {scenarioFixes.sickness ? '✨ +35% Health & Vigor' : '👉 Drop onto pet scene!'}
+              </span>
+            </div>
+          </div>
+
+          {/* SCENE 5: RIVER FLASH FLOOD & SINKING WAGON (BEFORE) -> CAULKED PITCH BOX & GUIDE ROPE (AFTER) */}
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              soundEffects.playSplash();
+              setScenarioFixes(prev => ({ ...prev, flood: true }));
+              triggerToast('🌊 AFTER: Caulked the wagon box with pine pitch & guided safely up the sandbank!');
+            }}
+            className={`rounded-3xl p-5 border-2 transition-all duration-500 relative overflow-hidden ${
+              scenarioFixes.flood
+                ? 'bg-gradient-to-br from-emerald-950 via-teal-900 to-cyan-900 border-emerald-400 shadow-lg'
+                : 'bg-gradient-to-br from-blue-950 via-slate-900 to-cyan-950 border-cyan-500/80 shadow-lg'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                scenarioFixes.flood ? 'bg-emerald-400 text-emerald-950' : 'bg-cyan-500 text-slate-950 animate-pulse'
+              }`}>
+                {scenarioFixes.flood ? '✅ AFTER: CAULKED PITCH WAGON FLOAT!' : '🌊 BEFORE: RIVER FLASH FLOOD & SINKING AXLE'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setScenarioFixes(prev => ({ ...prev, flood: !prev.flood }))}
+                className="text-[11px] font-bold underline text-cyan-200 hover:text-white cursor-pointer"
+              >
+                {scenarioFixes.flood ? 'View Flood (Before)' : 'Toggle After'}
+              </button>
+            </div>
+
+            <div className={`h-44 rounded-2xl border-2 p-4 flex flex-col justify-between relative overflow-hidden transition-all duration-500 ${
+              scenarioFixes.flood
+                ? 'bg-gradient-to-b from-teal-500/20 via-emerald-600/20 to-slate-900 border-emerald-300/50'
+                : 'bg-gradient-to-b from-blue-950 via-cyan-950/60 to-slate-900 border-cyan-500/40'
+            }`}>
+              {!scenarioFixes.flood ? (
+                <>
+                  <div className="text-xs font-bold text-cyan-200 flex items-center justify-between">
+                    <span>🌊⚡ Rapid White Water Rushing Through Floorboards!</span>
+                    <span className="bg-blue-900/90 px-2 py-0.5 rounded text-[10px]">Wagon Submerged</span>
+                  </div>
+                  <div className="my-auto flex items-center justify-center gap-4">
+                    <div className="text-4xl animate-bounce">🌊🪵</div>
+                    <div className="text-4xl">🐴💦</div>
+                    <div className="text-4xl">{activePet.emoji}😱🌊</div>
+                  </div>
+                  <div className="text-[11px] text-cyan-200/90 text-center font-medium">
+                    Carriage tipped at 40° in roaring rapids! Cages are bobbing and feed sacks soaking wet!
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs font-bold text-emerald-200 flex items-center justify-between">
+                    <span>🚣‍♂️🪵 Pine-Pitch Watertight Hull &amp; Guide Line</span>
+                    <span className="bg-emerald-400 text-emerald-950 font-black px-2 py-0.5 rounded text-[10px]">100% Dry &amp; Floated</span>
+                  </div>
+                  <div className="my-auto flex items-center justify-center gap-4">
+                    <div className="text-5xl">🚣‍♂️🪵🔥</div>
+                    <div className="text-4xl animate-bounce">{activePet.emoji}✨🌾</div>
+                  </div>
+                  <div className="text-[11px] text-emerald-100 text-center font-medium">
+                    Pine pitch sealed all seams like a boat hull! Caravan reached the opposite bank warm and dry.
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between bg-black/40 rounded-2xl p-3 border border-white/10">
+              <div
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData('text/plain', 'fix_flood')}
+                onClick={() => {
+                  soundEffects.playSplash();
+                  setScenarioFixes(prev => ({ ...prev, flood: true }));
+                  triggerToast('🚣‍♂️ Fixed! Pine pitch caulking applied & guide line hauled to shore!');
+                }}
+                className="flex items-center gap-2.5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl cursor-grab active:cursor-grabbing shadow transition"
+              >
+                <span className="text-xl">🪵🚣‍♂️</span>
+                <span>Drag or Tap Pine Pitch Caulk to Float</span>
+              </div>
+              <span className="text-[11px] text-stone-300 font-bold">
+                {scenarioFixes.flood ? '✨ +25 Durability & Dry Rations' : '👉 Drop onto flood scene!'}
+              </span>
+            </div>
+          </div>
+
+          {/* SCENE 6: 104°F DESERT HEATWAVE (BEFORE) -> SILVER REFLECTIVE CANOPY & CHILLED TILES (AFTER) */}
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              soundEffects.playDesertWind();
+              setScenarioFixes(prev => ({ ...prev, heat: true }));
+              triggerToast('❄️ AFTER: Deployed reflective canopy & chilled terracotta tiles! Core temp drops to 68°F!');
+            }}
+            className={`rounded-3xl p-5 border-2 transition-all duration-500 relative overflow-hidden ${
+              scenarioFixes.heat
+                ? 'bg-gradient-to-br from-emerald-950 via-teal-900 to-blue-950 border-emerald-400 shadow-lg'
+                : 'bg-gradient-to-br from-amber-950 via-orange-950 to-stone-900 border-amber-500/80 shadow-lg'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                scenarioFixes.heat ? 'bg-emerald-400 text-emerald-950' : 'bg-orange-500 text-stone-950 animate-pulse'
+              }`}>
+                {scenarioFixes.heat ? '✅ AFTER: CHILLED TILES & REFLECTIVE SHADE!' : '☀️ BEFORE: 104°F BLISTERING DESERT HEAT'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setScenarioFixes(prev => ({ ...prev, heat: !prev.heat }))}
+                className="text-[11px] font-bold underline text-amber-200 hover:text-white cursor-pointer"
+              >
+                {scenarioFixes.heat ? 'View Heatwave (Before)' : 'Toggle After'}
+              </button>
+            </div>
+
+            <div className={`h-44 rounded-2xl border-2 p-4 flex flex-col justify-between relative overflow-hidden transition-all duration-500 ${
+              scenarioFixes.heat
+                ? 'bg-gradient-to-b from-cyan-500/20 via-teal-600/20 to-slate-900 border-emerald-300/50'
+                : 'bg-gradient-to-b from-amber-950 via-red-950/60 to-stone-900 border-orange-500/40'
+            }`}>
+              {!scenarioFixes.heat ? (
+                <>
+                  <div className="text-xs font-bold text-orange-200 flex items-center justify-between">
+                    <span>☀️🔥 Scorching 104°F Sunlight · Ear Vessels Dilated</span>
+                    <span className="bg-red-900/90 px-2 py-0.5 rounded text-[10px]">Heat Stroke Alert</span>
+                  </div>
+                  <div className="my-auto flex items-center justify-center gap-4">
+                    <div className="text-4xl animate-pulse">☀️🌵</div>
+                    <div className="text-4xl">🔥🥵</div>
+                    <div className="text-4xl">{activePet.emoji}🥀</div>
+                  </div>
+                  <div className="text-[11px] text-orange-200/90 text-center font-medium">
+                    Small animals cannot sweat! {activePet.name} is panting rapidly and lethargic under the hot tarp.
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs font-bold text-cyan-200 flex items-center justify-between">
+                    <span>⛺❄️ Silver Solar Canopy · Chilled Terracotta Tile</span>
+                    <span className="bg-emerald-400 text-emerald-950 font-black px-2 py-0.5 rounded text-[10px]">68°F Cool &amp; Calm</span>
+                  </div>
+                  <div className="my-auto flex items-center justify-center gap-4">
+                    <div className="text-5xl">⛺❄️💧</div>
+                    <div className="text-4xl animate-bounce">{activePet.emoji}😌✨</div>
+                  </div>
+                  <div className="text-[11px] text-emerald-100 text-center font-medium">
+                    Silver fabric deflected 95% of solar radiation! Terracotta evaporative tile cooled paws to a safe 68°F.
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between bg-black/40 rounded-2xl p-3 border border-white/10">
+              <div
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData('text/plain', 'fix_heat')}
+                onClick={() => {
+                  soundEffects.playDesertWind();
+                  setScenarioFixes(prev => ({ ...prev, heat: true }));
+                  triggerToast('❄️ Fixed! Silver solar canopy deployed & chilled terracotta tile placed in pen!');
+                }}
+                className="flex items-center gap-2.5 bg-orange-400 hover:bg-orange-300 text-stone-950 font-black text-xs px-3.5 py-2 rounded-xl cursor-grab active:cursor-grabbing shadow transition"
+              >
+                <span className="text-xl">⛺❄️</span>
+                <span>Drag or Tap Solar Canopy &amp; Chilled Tile</span>
+              </div>
+              <span className="text-[11px] text-stone-300 font-bold">
+                {scenarioFixes.heat ? '✨ +30 Vigor & Heat Immunity' : '👉 Drop onto heat scene!'}
+              </span>
+            </div>
+          </div>
+
+          {/* SCENE 7: NIGHT WOLF HOWL & BENT LATCH (BEFORE) -> KEROSENE LANTERNS & BRASS CARABINERS (AFTER) */}
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              soundEffects.playCoyoteHowl();
+              setScenarioFixes(prev => ({ ...prev, wolf: true }));
+              triggerToast('🐺 AFTER: Locked two-step brass carabiners & lit perimeter lanterns! Predators repelled!');
+            }}
+            className={`rounded-3xl p-5 border-2 transition-all duration-500 relative overflow-hidden ${
+              scenarioFixes.wolf
+                ? 'bg-gradient-to-br from-emerald-950 via-teal-900 to-indigo-950 border-emerald-400 shadow-lg'
+                : 'bg-gradient-to-br from-slate-950 via-indigo-950 to-stone-900 border-indigo-500/80 shadow-lg'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                scenarioFixes.wolf ? 'bg-emerald-400 text-emerald-950' : 'bg-indigo-500 text-white animate-pulse'
+              }`}>
+                {scenarioFixes.wolf ? '✅ AFTER: BRASS CARABINERS & PERIMETER LAMPS!' : '🐺 BEFORE: PRAIRIE WOLVES GNIDGING WIRE LATCH'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setScenarioFixes(prev => ({ ...prev, wolf: !prev.wolf }))}
+                className="text-[11px] font-bold underline text-indigo-200 hover:text-white cursor-pointer"
+              >
+                {scenarioFixes.wolf ? 'View Wolves (Before)' : 'Toggle After'}
+              </button>
+            </div>
+
+            <div className={`h-44 rounded-2xl border-2 p-4 flex flex-col justify-between relative overflow-hidden transition-all duration-500 ${
+              scenarioFixes.wolf
+                ? 'bg-gradient-to-b from-indigo-500/20 via-emerald-600/20 to-slate-900 border-emerald-300/50'
+                : 'bg-gradient-to-b from-slate-950 via-indigo-950/60 to-stone-900 border-indigo-500/40'
+            }`}>
+              {!scenarioFixes.wolf ? (
+                <>
+                  <div className="text-xs font-bold text-indigo-200 flex items-center justify-between">
+                    <span>🐺🌕 Full Moon Wolf Pack · Bending Flimsy Hook</span>
+                    <span className="bg-indigo-950/90 px-2 py-0.5 rounded text-[10px]">Breach Hazard</span>
+                  </div>
+                  <div className="my-auto flex items-center justify-center gap-4">
+                    <div className="text-4xl animate-bounce">🐺🐾</div>
+                    <div className="text-4xl">🪵💥🪝</div>
+                    <div className="text-4xl">{activePet.emoji}😱</div>
+                  </div>
+                  <div className="text-[11px] text-indigo-200/90 text-center font-medium">
+                    Sharp paws unhooked the single wire latch! {activePet.name} is thumping hind legs in terror.
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs font-bold text-emerald-200 flex items-center justify-between">
+                    <span>🏮🔒 Perimeter Oil Lanterns &amp; Dual Brass Carabiners</span>
+                    <span className="bg-emerald-400 text-emerald-950 font-black px-2 py-0.5 rounded text-[10px]">100% Predator Fortified</span>
+                  </div>
+                  <div className="my-auto flex items-center justify-center gap-4">
+                    <div className="text-5xl">🏮🔒🐕</div>
+                    <div className="text-4xl animate-bounce">{activePet.emoji}😴💤</div>
+                  </div>
+                  <div className="text-[11px] text-emerald-100 text-center font-medium">
+                    Bright 30-yard lantern ring kept predators in the shadows! Dual carabiner latches cannot be opened by paws.
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between bg-black/40 rounded-2xl p-3 border border-white/10">
+              <div
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData('text/plain', 'fix_wolf')}
+                onClick={() => {
+                  soundEffects.playCoyoteHowl();
+                  setScenarioFixes(prev => ({ ...prev, wolf: true }));
+                  triggerToast('🏮 Fixed! Dual brass carabiners locked & perimeter lanterns lit!');
+                }}
+                className="flex items-center gap-2.5 bg-indigo-400 hover:bg-indigo-300 text-stone-950 font-black text-xs px-3.5 py-2 rounded-xl cursor-grab active:cursor-grabbing shadow transition"
+              >
+                <span className="text-xl">🏮🔒</span>
+                <span>Drag or Tap Lanterns &amp; Carabiners</span>
+              </div>
+              <span className="text-[11px] text-stone-300 font-bold">
+                {scenarioFixes.wolf ? '✨ +25 Peace of Mind & Safety' : '👉 Drop onto wolf scene!'}
+              </span>
+            </div>
+          </div>
+
+          {/* SCENE 8: TOXIC WATER HEMLOCK & MOLDY HAY (BEFORE) -> CERTIFIED TIMOTHY & CEDAR RACKS (AFTER) */}
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              soundEffects.playSuccessChime();
+              setScenarioFixes(prev => ({ ...prev, weed: true }));
+              triggerToast('🌾 AFTER: Restocked certified weed-free Western Timothy bales & installed elevated cedar racks!');
+            }}
+            className={`rounded-3xl p-5 border-2 transition-all duration-500 relative overflow-hidden ${
+              scenarioFixes.weed
+                ? 'bg-gradient-to-br from-emerald-950 via-teal-900 to-green-950 border-emerald-400 shadow-lg'
+                : 'bg-gradient-to-br from-red-950 via-stone-900 to-amber-950 border-red-500/80 shadow-lg'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                scenarioFixes.weed ? 'bg-emerald-400 text-emerald-950' : 'bg-red-500 text-white animate-pulse'
+              }`}>
+                {scenarioFixes.weed ? '✅ AFTER: CERTIFIED WEED-FREE TIMOTHY RACKS!' : '☠️ BEFORE: POISONOUS HEMLOCK & MOLDY BALES'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setScenarioFixes(prev => ({ ...prev, weed: !prev.weed }))}
+                className="text-[11px] font-bold underline text-amber-200 hover:text-white cursor-pointer"
+              >
+                {scenarioFixes.weed ? 'View Toxic Weeds (Before)' : 'Toggle After'}
+              </button>
+            </div>
+
+            <div className={`h-44 rounded-2xl border-2 p-4 flex flex-col justify-between relative overflow-hidden transition-all duration-500 ${
+              scenarioFixes.weed
+                ? 'bg-gradient-to-b from-emerald-500/20 via-green-600/20 to-slate-900 border-emerald-300/50'
+                : 'bg-gradient-to-b from-stone-950 via-red-950/60 to-stone-900 border-red-500/40'
+            }`}>
+              {!scenarioFixes.weed ? (
+                <>
+                  <div className="text-xs font-bold text-red-200 flex items-center justify-between">
+                    <span>☠️🥀 Deadly Water Hemlock Picked by Mistake!</span>
+                    <span className="bg-red-900/90 px-2 py-0.5 rounded text-[10px]">Toxicity Alert</span>
+                  </div>
+                  <div className="my-auto flex items-center justify-center gap-4">
+                    <div className="text-4xl">🥀☠️🧺</div>
+                    <div className="text-4xl">🍞🦠❌</div>
+                    <div className="text-4xl">{activePet.emoji}🤢</div>
+                  </div>
+                  <div className="text-[11px] text-red-200/90 text-center font-medium">
+                    Wild celery greens had purple-spotted stems (Water Hemlock)! Floor moisture turned hay moldy.
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs font-bold text-emerald-200 flex items-center justify-between">
+                    <span>🌾🪵 1st-Cutting Western Timothy on Elevated Cedar Slats</span>
+                    <span className="bg-emerald-400 text-emerald-950 font-black px-2 py-0.5 rounded text-[10px]">100% Certified Pure</span>
+                  </div>
+                  <div className="my-auto flex items-center justify-center gap-4">
+                    <div className="text-5xl">🌾🪵✨</div>
+                    <div className="text-4xl animate-bounce">{activePet.emoji}😋🌾</div>
+                  </div>
+                  <div className="text-[11px] text-emerald-100 text-center font-medium">
+                    Tossed wild weeds into fire! Restocked green aromatic Timothy hay elevated off damp floorboards.
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between bg-black/40 rounded-2xl p-3 border border-white/10">
+              <div
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData('text/plain', 'fix_weed')}
+                onClick={() => {
+                  soundEffects.playSuccessChime();
+                  setScenarioFixes(prev => ({ ...prev, weed: true }));
+                  triggerToast('🌾 Fixed! Certified weed-free Timothy hay restocked on elevated cedar racks!');
+                }}
+                className="flex items-center gap-2.5 bg-emerald-400 hover:bg-emerald-300 text-emerald-950 font-black text-xs px-3.5 py-2 rounded-xl cursor-grab active:cursor-grabbing shadow transition"
+              >
+                <span className="text-xl">🌾🪵</span>
+                <span>Drag or Tap Certified Timothy &amp; Cedar Racks</span>
+              </div>
+              <span className="text-[11px] text-stone-300 font-bold">
+                {scenarioFixes.weed ? '✨ +35 Motility & Pure Digestion' : '👉 Drop onto forage scene!'}
               </span>
             </div>
           </div>
