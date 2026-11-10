@@ -4,10 +4,102 @@
 
 export const TRAIL_HAZARDS = [
   {
+    id: 'hazard_bear_raid',
+    name: 'Midnight Black Bear Feed Raid & Smashed Tailgate',
+    severity: 'CRITICAL',
+    category: 'predator_biosecurity',
+    audioCue: 'bear_growl',
+    image: '/game/trail_storm_hazard.jpg',
+    narrative: 'At 2:00 AM under a crescent moon, a 350-pound mountain black bear smells unsealed sweet grain downwind! The bear lumbers into camp, claws open the rear canvas flap, smashes the wooden wagon tailgate off its hinges, and devours half your feed sacks! Inside his reinforced travel hutch, your companion is physically safe but thumping his hind legs in sheer terror.',
+    penalties: {
+      temperament: -30,
+      coatCondition: -10,
+      supplies: { feed: -40, transportGear: -25 },
+      milesDelayed: 6
+    },
+    educationalLesson: 'Never leave sweet molasses grain or open feed tubs outside at night. Predator biosecurity requires locking all rations in airtight metal vaults and housing small animals inside heavy-gauge welded wire enclosures.',
+    recoveryPrompt: 'Perform "Fill With Love" calming strokes immediately, then visit the Trading Post for the Bear-Proof Galvanized Feed Vault & Oak Tailgate Repair Kit (95 pts).',
+    solutionItem: {
+      id: 'repair_bear_vault_tailgate',
+      name: 'Bear-Proof Galvanized Feed Vault & Oak Tailgate Kit',
+      cost: 95,
+      emoji: '🐻‍❄️'
+    }
+  },
+  {
+    id: 'hazard_thrown_wheel_tire',
+    name: 'Shattered Hickory Wheel & Thrown Iron Tire',
+    severity: 'SEVERE',
+    category: 'breakdown',
+    audioCue: 'wheel_crash',
+    image: '/game/trail_storm_hazard.jpg',
+    narrative: 'CRACK-CLANG! Your front-right wagon wheel slams into a jagged granite washout rut at Devil’s Gulch. Three wooden spokes snap like dry kindling and the heavy iron outer tire rim flies completely off the wheel, rolling down the canyon! Your wagon lurches to a halt at a steep 30-degree tilt.',
+    penalties: {
+      temperament: -20,
+      poseTraining: -15,
+      supplies: { transportGear: -35, water: -15 },
+      milesDelayed: 8
+    },
+    educationalLesson: 'Rough transit jolts can injure delicate animal spines or cause broken teeth against cage wire. Slow down over rocky ruts and brace carriers on shock-absorbing felt pads.',
+    recoveryPrompt: 'Your wagon wheel is crippled! Purchase a Spare Seasoned Hickory Wheel & Forged Iron Tire (110 pts) at the Outfitter to jack up the axle and replace the tire.',
+    solutionItem: {
+      id: 'repair_spare_wheel_tire',
+      name: 'Spare Seasoned Hickory Wheel & Forged Iron Tire',
+      cost: 110,
+      emoji: '🛞'
+    }
+  },
+  {
+    id: 'hazard_early_illness_vet',
+    name: 'Early GI Slowdown & Respiratory Sniffles (Veterinary Alert)',
+    severity: 'CRITICAL',
+    category: 'health_alert',
+    audioCue: 'vet_alert',
+    image: '/game/trail_storm_hazard.jpg',
+    narrative: 'During morning barn check, you notice your companion sitting hunched in a tight "bread-loaf" posture in the back corner of the pen. Morning pellets are untouched, droppings are tiny and scant, and there is slight dampness around the nostrils. Immediate professional evaluation is needed!',
+    penalties: {
+      vigorHydration: -30,
+      coatCondition: -15,
+      temperament: -20,
+      supplies: { feed: -10 }
+    },
+    educationalLesson: 'Hunched posture, tooth grinding, and untouched feed are classic early warning signs of gastrointestinal stasis or respiratory irritation. Never guess at home medications—always isolate, keep warm, and call a licensed veterinarian immediately.',
+    recoveryPrompt: 'Dispatch the Licensed Mobile Trail Veterinarian & Supportive Care Recovery Pack (120 pts) at the Outfitter for a stethoscope exam, hydration support, and critical-care herb mash!',
+    solutionItem: {
+      id: 'camp_mobile_vet_visit',
+      name: 'Licensed Mobile Veterinarian Visit & Supportive Recovery Pack',
+      cost: 120,
+      emoji: '🩺'
+    }
+  },
+  {
+    id: 'hazard_coyote_prowl',
+    name: 'Night Coyote Pack Prowl & Bent Carrier Latch',
+    severity: 'SEVERE',
+    category: 'predator_biosecurity',
+    audioCue: 'alert',
+    image: '/game/trail_storm_hazard.jpg',
+    narrative: 'Drawn by soiled bedding left near camp, a pair of bold prairie coyotes circle the wagon at midnight! One leaps onto the wagon tongue and scratches at the outer carrier door, bending the light wire latch before your camp lantern scares the pack away.',
+    penalties: {
+      temperament: -25,
+      poseTraining: -15,
+      supplies: { transportGear: -20, bedding: -15 }
+    },
+    educationalLesson: 'Thin chicken wire only keeps poultry in—it never keeps predators out! Always protect small animal housing with 1/2-inch 14-gauge welded hardware cloth and two-step carabiner safety latches.',
+    recoveryPrompt: 'Upgrade to the 14-Gauge Predator Hardware Cloth & Carabiner Safety Latch (90 pts) at the Outfitter and comfort your animal.',
+    solutionItem: {
+      id: 'repair_predator_mesh',
+      name: '14-Gauge Predator Hardware Cloth & Carabiner Latch',
+      cost: 90,
+      emoji: '🛡️'
+    }
+  },
+  {
     id: 'hazard_deluge_mud',
     name: 'Sudden Mountain Thunderstorm & Mud Axle Trap',
     severity: 'SEVERE',
     category: 'weather',
+    audioCue: 'storm_thunder',
     image: '/game/trail_storm_hazard.jpg',
     narrative: 'A violent frontier squall strikes without warning! Rain pours in blinding torrents, washing out the road ahead. Your heavy pioneer wagon sinks to its wooden axles in thick, sticky clay. Wind tears open the carrier canvas, drenching your companion with muddy spray!',
     penalties: {
@@ -17,7 +109,13 @@ export const TRAIL_HAZARDS = [
       milesDelayed: 5
     },
     educationalLesson: 'Sudden rainstorms cause hypothermia and ruin show coats. Always secure waterproof oilcloth tarps and carry dry straw reserves before crossing low clay gullies.',
-    recoveryPrompt: 'You must halt the caravan, dig out the wagon wheels, and spend extra time drying and grooming your animal.'
+    recoveryPrompt: 'Stitch the torn cover with the Waxed Canvas & Heavy Needle Kit (75 pts) and dry your companion with the Camelhair Show Brush.',
+    solutionItem: {
+      id: 'repair_canvas_patch',
+      name: 'Waxed Canvas & Heavy Needle Kit',
+      cost: 75,
+      emoji: '🧵'
+    }
   },
   {
     id: 'hazard_downed_timber',

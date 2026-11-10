@@ -831,6 +831,7 @@ export default function HerdTrailQuest({
           hazard={activeHazard}
           onAcknowledge={() => setActiveHazard(null)}
           onAskWarrenWise={() => onOpenAiTrainer?.()}
+          onOpenOutfitter={() => setActiveTab('outfitter')}
         />
       )}
 

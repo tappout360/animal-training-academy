@@ -340,6 +340,124 @@ class SoundEffectsController {
     }
   }
 
+  // Deep resonant bear growl / snort for Midnight Bear Raid calamity
+  playBearGrowl() {
+    this.triggerHaptic([60, 40, 90]);
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(95, now);
+      osc.frequency.linearRampToValueAtTime(62, now + 0.25);
+      osc.frequency.linearRampToValueAtTime(78, now + 0.45);
+      osc.frequency.exponentialRampToValueAtTime(45, now + 0.75);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.14, now + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.85);
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  // Wagon wheel crack and iron tire clang
+  playWheelCrash() {
+    this.triggerHaptic([80, 30, 60]);
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      // Wood crack + metallic ring
+      [180, 620, 410].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const t = now + idx * 0.07;
+
+        osc.type = idx === 1 ? 'triangle' : 'square';
+        osc.frequency.setValueAtTime(freq, t);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.5, t + 0.22);
+
+        gain.gain.setValueAtTime(0.12, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.28);
+      });
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  // Rolling thunder & storm crack
+  playStormThunder() {
+    this.triggerHaptic([50, 40, 100]);
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.exponentialRampToValueAtTime(38, now + 0.9);
+
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.95);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 1.0);
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  // Licensed Mobile Vet comforting recovery chime
+  playVetRecoveryChime() {
+    this.triggerHaptic(20);
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      [392.00, 493.88, 587.33, 783.99].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const t = now + idx * 0.09;
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.1, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.45);
+      });
+    } catch (e) {
+      // Ignore
+    }
+  }
+
   // Success bell / positive completion
   playSuccess() {
     this.playSuccessChime();

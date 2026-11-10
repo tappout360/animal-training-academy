@@ -89,11 +89,76 @@ export const WAGON_AILMENTS = {
     description: 'Warm trail sun built up algae slime inside the drinking barrel, causing animal dehydration hesitation.',
     cureItemId: 'camp_charcoal_filter',
     penaltyText: '-15% Vigor & Hydration'
+  },
+  thrown_wheel_tire: {
+    id: 'thrown_wheel_tire',
+    name: 'Shattered Hickory Wheel & Thrown Iron Tire',
+    emoji: '🛞',
+    description: 'Three wooden wheel spokes snapped in a granite washout and the forged iron tire rim rolled off into the ravine!',
+    cureItemId: 'repair_spare_wheel_tire',
+    penaltyText: '-35% Wagon Durability & -15% Pose Stability'
+  },
+  smashed_tailgate: {
+    id: 'smashed_tailgate',
+    name: 'Bear-Smashed Tailgate & Torn Feed Bay',
+    emoji: '🐻',
+    description: 'A midnight black bear smelled unsealed grain, ripping the wagon tailgate off its hinges and scattering rations.',
+    cureItemId: 'repair_bear_vault_tailgate',
+    penaltyText: '-30% Calm Temperament & exposed rear cargo'
+  },
+  early_illness_vet: {
+    id: 'early_illness_vet',
+    name: 'Early GI Slowdown & Sniffles (Vet Alert)',
+    emoji: '🩺',
+    description: 'Your companion sits hunched with untouched pellets and scant droppings. Requires a Licensed Mobile Veterinarian checkup!',
+    cureItemId: 'camp_mobile_vet_visit',
+    penaltyText: '-30% Vigor & Hydration until examined by Trail Vet'
+  },
+  bent_carrier_latch: {
+    id: 'bent_carrier_latch',
+    name: 'Coyote-Bent Carrier Latch & Stretched Wire',
+    emoji: '🐺',
+    description: 'Prowling night coyotes scratched at the outer door mesh, bending the light wire latch and rattling your companion.',
+    cureItemId: 'repair_predator_mesh',
+    penaltyText: '-25% Calm Temperament & carrier security risk'
   }
 };
 
 export const TRAIL_OUTFITTER_CATALOG = [
   // --- WAGON REPAIR & AILMENT CURES (Repeatable Point Sinks) ---
+  {
+    id: 'repair_spare_wheel_tire',
+    name: 'Spare Seasoned Hickory Wheel & Forged Iron Tire',
+    category: 'wagon_repair',
+    cost: 110,
+    emoji: '🛞',
+    description: 'Complete replacement hickory spoke wheel fitted with a shrunken hot-forged iron tire rim and heavy screw jack.',
+    effect: { wagonDurability: 45, carrierCushion: 20, poseTraining: 10 },
+    clearsAilment: 'thrown_wheel_tire',
+    lore: 'No Oregon Trail caravan survives the granite washouts without a spare wheel and iron tire strapped under the wagon bed!'
+  },
+  {
+    id: 'repair_bear_vault_tailgate',
+    name: 'Bear-Proof Galvanized Feed Vault & Oak Tailgate Kit',
+    category: 'wagon_repair',
+    cost: 95,
+    emoji: '🐻‍❄️',
+    description: 'Rebuilds smashed wagon tailgates with iron-bound oak planks and locks all sweet grain inside an airtight bear-proof vault.',
+    effect: { wagonDurability: 35, canvasCover: 25, feedSupply: 30, temperament: 20 },
+    clearsAilment: 'smashed_tailgate',
+    lore: 'Seals feed odors completely so mountain black bears and raccoons pass right by your camp at night.'
+  },
+  {
+    id: 'repair_predator_mesh',
+    name: '14-Gauge Predator Hardware Cloth & Carabiner Latch',
+    category: 'wagon_repair',
+    cost: 90,
+    emoji: '🛡️',
+    description: 'Replaces flimsy poultry netting with 1/2-inch welded steel hardware cloth and a two-step predator-proof safety latch.',
+    effect: { carrierCushion: 35, temperament: 20, poseTraining: 10 },
+    clearsAilment: 'bent_carrier_latch',
+    lore: 'Chicken wire only keeps birds in; heavy welded hardware cloth keeps coyotes, foxes, and bobcats out!'
+  },
   {
     id: 'repair_axle_grease',
     name: 'Pine Pitch & Tallow Axle Grease',
@@ -140,6 +205,17 @@ export const TRAIL_OUTFITTER_CATALOG = [
   },
 
   // --- CAMP BETTERMENT & RESTOCK (Repeatable Point Sinks) ---
+  {
+    id: 'camp_mobile_vet_visit',
+    name: 'Licensed Mobile Veterinarian Visit & Supportive Recovery Pack',
+    category: 'camp_betterment',
+    cost: 120,
+    emoji: '🩺',
+    description: 'Dispatches Dr. Clara’s Mobile Trail Veterinary Buggy for a full stethoscope & temperature checkup, critical-care recovery herb mash, and hydration support.',
+    effect: { vigorHydration: 35, coatCondition: 15, temperament: 25, campComfort: 25, feedSupply: 20, waterSupply: 20 },
+    clearsAilment: 'early_illness_vet',
+    lore: 'When an animal shows early signs of illness or gut slowdown, responsible showmen never self-medicate—they call a licensed veterinarian immediately!'
+  },
   {
     id: 'camp_cedar_bedding',
     name: 'Mountain Pine & Cedar Flake Pack',

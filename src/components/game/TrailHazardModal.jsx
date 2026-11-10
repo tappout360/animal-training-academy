@@ -2,17 +2,32 @@
 // Trail Hazard & Calamity Modal (Frontier Wilderness Consequences for Mistakes)
 // Dramatic Visual Storytelling, Real Stat Penalties & 4-H Husbandry Learning
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   AlertTriangle, CloudRain, Wind, Flame, Droplets, 
-  ShieldAlert, BookOpen, Bot, ArrowRight, X, HeartCrack
+  ShieldAlert, BookOpen, Bot, ArrowRight, X, HeartCrack, Wrench, Volume2
 } from 'lucide-react';
+import { soundEffects } from '../../utils/audioEffects';
 
 export default function TrailHazardModal({
   hazard,
   onAcknowledge,
-  onAskWarrenWise
+  onAskWarrenWise,
+  onOpenOutfitter
 }) {
+  useEffect(() => {
+    if (!hazard) return;
+    if (hazard.audioCue === 'bear_growl') {
+      soundEffects.playBearGrowl();
+    } else if (hazard.audioCue === 'wheel_crash') {
+      soundEffects.playWheelCrash();
+    } else if (hazard.audioCue === 'storm_thunder') {
+      soundEffects.playStormThunder();
+    } else {
+      soundEffects.playAlert();
+    }
+  }, [hazard]);
+
   if (!hazard) return null;
 
   return (
@@ -88,9 +103,41 @@ export default function TrailHazardModal({
               )}
             </div>
             <div className="text-[11px] text-stone-400 italic">
-              Notice: You can restore these metrics at camp using the Outfitter brush, spring water, and calming herbs.
+              Notice: {hazard.recoveryPrompt || 'You can restore these metrics at camp using the Outfitter brush, spring water, and calming herbs.'}
             </div>
           </div>
+
+          {/* Direct Outfitter / Vet Outpost Solution Card */}
+          {hazard.solutionItem && (
+            <div className="bg-amber-950/60 border border-amber-500/60 rounded-2xl p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{hazard.solutionItem.emoji || '🛠️'}</span>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-wider text-amber-300 flex items-center gap-1">
+                    <Wrench className="w-3.5 h-3.5" /> Recommended Fix at Trading Post:
+                  </div>
+                  <div className="text-xs sm:text-sm font-bold text-white">
+                    {hazard.solutionItem.name}
+                  </div>
+                  <div className="text-[11px] text-amber-200/80">
+                    Cost: {hazard.solutionItem.cost} Trail Points · Restores damaged stats & clears ailment
+                  </div>
+                </div>
+              </div>
+              {onOpenOutfitter && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAcknowledge();
+                    onOpenOutfitter();
+                  }}
+                  className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-xs shrink-0 transition-colors cursor-pointer"
+                >
+                  Visit Outfitter
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Educational 4-H Husbandry Lesson */}
           <div className="bg-stone-850 p-4 rounded-2xl border border-stone-700/70 text-xs space-y-1.5">
