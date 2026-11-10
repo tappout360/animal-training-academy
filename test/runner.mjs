@@ -10,7 +10,17 @@ import {
   transitionContentStatus, isContentStale 
 } from '../src/services/GovernanceService.js';
 import { 
-  validateYouthProfile, verifyParentPin, verifyCoachCode, canCoachAccessLearner 
+  validateYouthProfile,
+  verifyParentPin,
+  verifyCoachCode,
+  canCoachAccessLearner,
+  getSecurityCredentials,
+  setupOrUpdateParentPin,
+  setupOrUpdateCoachPasscode,
+  setLearnerProfilePin,
+  verifyLearnerProfilePin,
+  recoverPinOrPasscode,
+  resetSecurityCredentialsToDefaults
 } from '../src/services/YouthSafetyService.js';
 import { AdminAuthService } from '../src/services/AdminAuthService.js';
 import { calculateLearnerMastery } from '../src/services/MasteryEngine.js';
@@ -2178,6 +2188,80 @@ test('Express Quick Care Mode satisfies anti-fatigue requirements with honest 75
   // Verify honest express show advantage (+5 bonus instead of +15)
   const streakResult = PerformanceAndFeelService.recordCareDayStreak(questState.careStreak, true);
   assert.strictEqual(streakResult.updatedStreak, 5, 'Daily streak is preserved during busy school mornings');
+});
+
+test('Parent & 4-H Coach Passcode and PIN Setup system supports custom PINs, Co-Guardian PINs, Club Codes, Youth Profile PINs, and Recovery', () => {
+  resetSecurityCredentialsToDefaults();
+  const initial = getSecurityCredentials();
+  assert.strictEqual(initial.parentPin, '4444');
+  assert.strictEqual(initial.coachCode, '2222');
+  assert.strictEqual(verifyParentPin('4444'), true);
+  assert.strictEqual(verifyCoachCode('2222'), true);
+
+  // 1. Setup custom Parent PIN + Co-Guardian Secondary PIN + Recovery
+  const parentSetup = setupOrUpdateParentPin({
+    currentPin: '4444',
+    newPin: '7890',
+    secondaryPin: '5566',
+    recoveryQuestion: 'What was the name of your first childhood pet or barn animal?',
+    recoveryAnswer: 'Barnaby'
+  });
+  assert.strictEqual(parentSetup.success, true);
+  assert.strictEqual(verifyParentPin('7890'), true, 'Primary custom Parent PIN must verify');
+  assert.strictEqual(verifyParentPin('5566'), true, 'Co-Guardian Secondary PIN must verify');
+  assert.strictEqual(verifyParentPin('9999'), false, 'Invalid PIN must be rejected');
+
+  // Verify ParentalControlsService honors custom Parent PIN and Co-Guardian PIN
+  const limitsRes = ParentalControlsService.saveLimits({
+    learnerId: 'test_pin_child',
+    parentPin: '7890',
+    newLimits: { dailyTimeLimitMinutes: 45 },
+    reason: 'Custom Parent PIN verification test'
+  });
+  assert.strictEqual(limitsRes.success, true, 'ParentalControlsService must accept custom Parent PIN');
+
+  const coGuardianRes = ParentalControlsService.quickExtend({
+    learnerId: 'test_pin_child',
+    parentPin: '5566',
+    extensionMinutes: 15
+  });
+  assert.strictEqual(coGuardianRes.success, true, 'ParentalControlsService must accept Co-Guardian PIN');
+
+  // 2. Setup custom 4-H Coach Passcode + Club Roster Join Code
+  const coachSetup = setupOrUpdateCoachPasscode({
+    currentCode: '2222',
+    newCode: 'LEADER-26',
+    clubJoinCode: '4H-VALLEY-99',
+    recoveryAnswer: 'BlueRibbon'
+  });
+  assert.strictEqual(coachSetup.success, true);
+  assert.strictEqual(verifyCoachCode('LEADER-26'), true, 'Custom Coach Passcode must verify');
+  assert.strictEqual(verifyCoachCode('4h-valley-99'), true, 'Case-insensitive Club Join Code must verify');
+
+  // 3. Configure Youth Learner Profile PIN
+  const learnerPinRes = setLearnerProfilePin({
+    authorizingPin: '7890',
+    learnerId: 'learner_maya',
+    learnerHandle: 'CloverMaya88',
+    pin: '1357',
+    enabled: true
+  });
+  assert.strictEqual(learnerPinRes.success, true);
+  assert.strictEqual(verifyLearnerProfilePin('learner_maya', '1357'), true, 'Correct Youth Profile PIN must unlock');
+  assert.strictEqual(verifyLearnerProfilePin('learner_maya', '7890'), true, 'Parent PIN can also unlock child profile');
+  assert.strictEqual(verifyLearnerProfilePin('learner_maya', '0000'), false, 'Wrong Youth Profile PIN must be blocked');
+
+  // 4. Test Forgot PIN / Recovery Flow
+  const recoverParent = recoverPinOrPasscode({
+    role: 'parent',
+    recoveryAnswer: 'barnaby',
+    newSecret: '4321'
+  });
+  assert.strictEqual(recoverParent.success, true);
+  assert.strictEqual(verifyParentPin('4321'), true, 'Recovered Parent PIN must be active');
+
+  // Reset back to defaults after test
+  resetSecurityCredentialsToDefaults();
 });
 
 test('Zero-Jank debounced batch save preserves main thread responsiveness and persists state accurately', (done) => {

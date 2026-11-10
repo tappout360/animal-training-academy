@@ -2,6 +2,8 @@
 // Core Rule: The app does NOT hard-lock youth beyond statutory legal/safety minimums.
 // Parents control all limits independently per linked child. Supports "No Limit" across all categories.
 
+import { verifyParentPin } from './YouthSafetyService.js';
+
 const CONTROLS_STORAGE_PREFIX = 'ww_parental_controls_';
 const AUDIT_STORAGE_PREFIX = 'ww_parental_audit_';
 const USAGE_STORAGE_PREFIX = 'ww_daily_usage_';
@@ -182,11 +184,11 @@ export class ParentalControlsService {
     parentEmail = 'parent@farmfamily.org',
     reason = 'Parent updated learning boundaries'
   }) {
-    // 1. PIN verification for security
-    if (String(parentPin).trim() !== '4444') {
+    // 1. PIN verification for security (supports default or custom Parent / Co-Guardian PIN)
+    if (!verifyParentPin(parentPin)) {
       return {
         success: false,
-        error: 'Incorrect Parent PIN. Please enter your 4-digit PIN.'
+        error: 'Incorrect Parent PIN. Please enter your active Parent or Co-Guardian PIN.'
       };
     }
 
@@ -233,7 +235,7 @@ export class ParentalControlsService {
     parentPin = '4444',
     extensionMinutes = 30
   }) {
-    if (String(parentPin).trim() !== '4444') {
+    if (!verifyParentPin(parentPin)) {
       return { success: false, error: 'Invalid Parent PIN.' };
     }
 
@@ -265,7 +267,7 @@ export class ParentalControlsService {
     freeze = true,
     message = 'App frozen by parent. Time for chores or dinner!'
   }) {
-    if (String(parentPin).trim() !== '4444') {
+    if (!verifyParentPin(parentPin)) {
       return { success: false, error: 'Invalid Parent PIN.' };
     }
 
@@ -291,7 +293,7 @@ export class ParentalControlsService {
     learnerId,
     parentPin = '4444'
   }) {
-    if (String(parentPin).trim() !== '4444') {
+    if (!verifyParentPin(parentPin)) {
       return { success: false, error: 'Invalid Parent PIN.' };
     }
 

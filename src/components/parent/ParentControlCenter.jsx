@@ -10,6 +10,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import ParentSubscriptionTab from './ParentSubscriptionTab';
+import PasscodeAndPinSetupCard from '../common/PasscodeAndPinSetupCard';
 import { 
   ParentalControlsService, 
   TIME_LIMIT_OPTIONS, 
@@ -22,7 +23,8 @@ import { ALL_SPECIES_PACKS } from '../../data/speciesPacks';
 export default function ParentControlCenter({
   learners = [],
   activeLearnerId,
-  onSelectLearner
+  onSelectLearner,
+  initialSubTab = 'controls'
 }) {
   // If no learners passed, provide realistic defaults
   const childList = learners.length > 0 ? learners : [
@@ -39,8 +41,14 @@ export default function ParentControlCenter({
     ParentalControlsService.getLimitsForLearner(selectedChild.id, selectedChild.division)
   );
 
-  // Active view tab in parent center: 'controls' | 'presets' | 'emergency' | 'audit'
-  const [activeTab, setActiveTab] = useState('controls');
+  // Active view tab in parent center: 'controls' | 'presets' | 'emergency' | 'audit' | 'subscription' | 'passcodes'
+  const [activeTab, setActiveTab] = useState(initialSubTab || 'controls');
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveTab(initialSubTab);
+    }
+  }, [initialSubTab]);
 
   // PIN Re-Auth Modal
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
@@ -261,6 +269,18 @@ export default function ParentControlCenter({
         >
           <CreditCard className="w-3.5 h-3.5" />
           <span>Membership &amp; Passes</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('passcodes')}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+            activeTab === 'passcodes'
+              ? 'bg-amber-600 text-white shadow-2xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <KeyRound className="w-3.5 h-3.5" />
+          <span>Passcodes &amp; PIN Setup</span>
         </button>
       </div>
 
@@ -733,6 +753,16 @@ export default function ParentControlCenter({
       {activeTab === 'subscription' && (
         <ParentSubscriptionTab
           parentEmail="parent.miller@example.com"
+          learners={childList}
+        />
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* TAB 6: PASSCODES, PINS & YOUTH PROFILE LOCKS         */}
+      {/* ---------------------------------------------------- */}
+      {activeTab === 'passcodes' && (
+        <PasscodeAndPinSetupCard
+          roleContext="parent"
           learners={childList}
         />
       )}

@@ -275,9 +275,10 @@ export default function App() {
           <ParentControlCenter
             learners={learners.filter(l => l.parentEmail === 'parent.miller@example.com')}
             activeLearnerId={currentLearner.id}
+            initialSubTab={activeTab === 'passcode_setup' ? 'passcodes' : 'controls'}
             onSelectLearner={(id) => {
               const found = learners.find(l => l.id === id);
-              if (found) setCurrentLearner(found);
+              if (found) setActiveDivision(found.ageDivision);
             }}
           />
         )}
@@ -291,6 +292,15 @@ export default function App() {
             observations={observations}
             onAddAssignment={handleAddAssignment}
             onSaveObservation={handleSaveObservation}
+            initialSubTab={
+              activeTab === 'passcode_setup'
+                ? 'passcodes'
+                : activeTab === 'assignments'
+                  ? 'assignments'
+                  : activeTab === 'observation'
+                    ? 'checklist'
+                    : 'roster'
+            }
           />
         )}
 

@@ -8,6 +8,7 @@ import {
 import { generateRosterHeatmap } from '../../services/MasteryEngine';
 import { generateCoachProgressSummary } from '../../services/WarrenWiseTrainerAI';
 import PracticalBarnChecklist from './PracticalBarnChecklist';
+import PasscodeAndPinSetupCard from '../common/PasscodeAndPinSetupCard';
 
 export default function CoachDashboard({
   learners = [],
@@ -15,9 +16,16 @@ export default function CoachDashboard({
   assignments = [],
   observations = [],
   onAddAssignment,
-  onSaveObservation
+  onSaveObservation,
+  initialSubTab = 'roster'
 }) {
-  const [activeSubTab, setActiveSubTab] = useState('roster'); // 'roster' | 'assignments' | 'checklist' | 'export'
+  const [activeSubTab, setActiveSubTab] = useState(initialSubTab || 'roster'); // 'roster' | 'assignments' | 'checklist' | 'export' | 'passcodes'
+
+  React.useEffect(() => {
+    if (initialSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
   const [selectedLearnerId, setSelectedLearnerId] = useState(learners[0]?.id || null);
 
   // New assignment modal / form state
@@ -121,6 +129,16 @@ export default function CoachDashboard({
             }`}
           >
             Exportable Progress Record Book
+          </button>
+          <button
+            onClick={() => setActiveSubTab('passcodes')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeSubTab === 'passcodes'
+                ? 'bg-amber-400 text-stone-950 shadow-sm'
+                : 'bg-blue-800/60 text-amber-200 hover:bg-blue-800'
+            }`}
+          >
+            🔑 Passcodes &amp; Club Codes
           </button>
         </div>
       </div>
@@ -440,6 +458,14 @@ export default function CoachDashboard({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Subtab 5: Passcodes, Club Join Codes & Youth Profile PINs */}
+      {activeSubTab === 'passcodes' && (
+        <PasscodeAndPinSetupCard
+          roleContext="coach"
+          learners={learners}
+        />
       )}
     </div>
   );

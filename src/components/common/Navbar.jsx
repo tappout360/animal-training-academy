@@ -1,6 +1,7 @@
 // WarrenWise Youth Animal Training Academy - Main Navigation Bar
 
 import React, { useState, useEffect } from 'react';
+import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/react';
 import { 
   Sparkles, Bot, Flame, Wifi, WifiOff, Award, 
   BookOpen, Target, CheckSquare, ShieldCheck, Users, BarChart3, HelpCircle,
@@ -8,6 +9,8 @@ import {
 } from 'lucide-react';
 import RoleSwitcher from './RoleSwitcher';
 import { PwaService } from '../../services/PwaService';
+
+const hasClerkKey = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 
 export default function Navbar({
   activeRole,
@@ -114,6 +117,27 @@ export default function Navbar({
 
           {/* Role Switcher */}
           <RoleSwitcher activeRole={activeRole} onSelectRole={onSelectRole} />
+
+          {/* Clerk Authentication Controls */}
+          {hasClerkKey && (
+            <div className="flex items-center gap-2 pl-1 border-l border-slate-200">
+              <Show when="signed-out">
+                <SignInButton mode="modal">
+                  <button className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition cursor-pointer">
+                    Sign In
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition cursor-pointer">
+                    Sign Up
+                  </button>
+                </SignUpButton>
+              </Show>
+              <Show when="signed-in">
+                <UserButton />
+              </Show>
+            </div>
+          )}
         </div>
       </div>
 
@@ -233,6 +257,15 @@ export default function Navbar({
                 <CheckSquare className="w-3.5 h-3.5 text-teal-600" />
                 <span>Family Chores &amp; Learning</span>
               </button>
+              <button
+                onClick={() => onSelectTab('passcode_setup')}
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
+                  activeTab === 'passcode_setup' ? 'bg-amber-600 text-white shadow-xs font-bold' : 'text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>🔑 Passcodes &amp; PIN Setup</span>
+              </button>
             </>
           )}
 
@@ -264,6 +297,15 @@ export default function Navbar({
               >
                 <Award className="w-3.5 h-3.5 text-purple-600" />
                 <span>Practical Barn Observation Rubric</span>
+              </button>
+              <button
+                onClick={() => onSelectTab('passcode_setup')}
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
+                  activeTab === 'passcode_setup' ? 'bg-blue-700 text-white shadow-xs font-bold' : 'text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>🔑 Passcodes &amp; Club Codes</span>
               </button>
             </>
           )}
