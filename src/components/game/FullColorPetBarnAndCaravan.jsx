@@ -146,6 +146,7 @@ export const PERSISTENT_BARN_PETS = SPECIES_KNOWLEDGE_CARDS.map(card => ({
   keyChallenges: card.keyChallenges,
   coreLearningTopics: card.coreLearningTopics,
   showFocus: card.showFocus,
+  showmanshipDetails: card.showmanshipDetails,
   specialNotes: card.specialNotes,
   stallTheme: card.stallTheme,
   accentBadge: card.accentBadge,
@@ -560,8 +561,13 @@ export default function FullColorPetBarnAndCaravan({
               })}
             </div>
 
-            <div className="p-3 rounded-2xl bg-black/40 border border-white/10 text-[11px] text-stone-300 leading-relaxed">
-              <strong className="text-amber-300">Species Rule ({activePet.species}):</strong> {activePet.specialCareWhy}
+            <div className="p-3 rounded-2xl bg-black/40 border border-white/10 text-[11px] text-stone-300 leading-relaxed space-y-1.5">
+              <div>
+                <strong className="text-amber-300">Daily Care ({activePet.species}):</strong> {activePet.specialCareWhy}
+              </div>
+              <div className="pt-1 border-t border-white/10 text-purple-200">
+                <strong className="text-purple-300">🏆 Showmanship Technique:</strong> {activePet.showmanshipDetails}
+              </div>
             </div>
           </div>
 
@@ -1030,6 +1036,11 @@ export default function FullColorPetBarnAndCaravan({
                         <div><strong>Key Challenges:</strong> {pet.keyChallenges}</div>
                         <div><strong>Core Topics:</strong> {pet.coreLearningTopics}</div>
                         <div><strong>Show Focus:</strong> {pet.showFocus}</div>
+                        {pet.showmanshipDetails && (
+                          <div className="p-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-950">
+                            <strong>🏆 Showmanship Details:</strong> {pet.showmanshipDetails}
+                          </div>
+                        )}
                         <div className="text-emerald-800 font-semibold"><strong>Special Note:</strong> {pet.specialNotes}</div>
                       </div>
                     )}

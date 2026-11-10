@@ -6,6 +6,7 @@ import { AGE_DIVISIONS, KNOWLEDGE_TIERS, LEGAL_DISCLAIMERS } from '../config/con
 import { ALL_SPECIES_PACKS } from '../data/speciesPacks/index.js';
 import { db } from '../db/academyDb.js';
 import { PRIMARY_SOURCES, HIGHER_ORDER_ARBA_QUESTIONS, getAccuracyLedgerAuditSummary } from '../data/arbaAccuracyLedger.js';
+import { SPECIES_KNOWLEDGE_CARDS } from '../data/speciesKnowledgeCards.js';
 
 // Strict medical & veterinary keywords that trigger immediate safety interception
 const MEDICAL_KEYWORDS = [
@@ -92,6 +93,13 @@ export async function askWarrenWiseTrainer({
     ho.scenarioPrompt.toLowerCase().includes(q) || ho.question.toLowerCase().includes(q)
   );
 
+  // Match 12-Species AI Knowledge Card (Rank 1 to 12)
+  const knowledgeCard = SPECIES_KNOWLEDGE_CARDS.find(c =>
+    c.id === speciesId ||
+    q.includes(c.id) ||
+    q.includes(c.speciesName.toLowerCase().split(' ')[0])
+  ) || SPECIES_KNOWLEDGE_CARDS[0];
+
   // 3. Construct Age-Responsive Coaching Response
   let response = {
     isSafetyBlocked: false,
@@ -101,13 +109,15 @@ export async function askWarrenWiseTrainer({
     moduleTitle: matchedModule.title,
     headline: moduleContent.headline || `Coaching Tips for ${matchedModule.title}`,
     ageAdaptedAdvice: generateAgeAdaptedTutoring(query, division, matchedModule, pack),
+    speciesKnowledgeCard: knowledgeCard,
+    showmanshipDetails: knowledgeCard.showmanshipDetails,
     primarySourceCitation: arbaMatch ? arbaMatch.sourceCitation : PRIMARY_SOURCES.SOP.title,
     authoritativeStandard: arbaMatch ? arbaMatch.primarySource : 'Official 4-H & ARBA Curricula',
     ungroundedLoreRefusal: 'Ungrounded internet forums and blogs are forbidden. Guidance strictly sourced from ARBA Standard of Perfection & Registrar Examination Manual.',
     studyTips: [
-      `Review ${matchedModule.title} in the ${pack.species} pack for division ${divConfig.name}.`,
-      'Practice step-by-step handling and observation daily in the barn.',
-      'Test your knowledge with the interactive module quiz to earn mastery badges.'
+      `Showmanship Focus (${knowledgeCard.speciesName}): ${knowledgeCard.showmanshipDetails}`,
+      `Space & Daily Care: ${knowledgeCard.spaceNeeds} · ${knowledgeCard.dailyCare}`,
+      `Review ${matchedModule.title} in the ${pack.species} pack for division ${divConfig.name}.`
     ],
     relatedQuestions: matchedModule.quizQuestions.slice(0, 2).map(q => q.question),
     disclaimer: LEGAL_DISCLAIMERS.general
