@@ -27,6 +27,7 @@ import FamilyBarnBoard from './livingHerd/FamilyBarnBoard';
 import HerdStoryLog from './livingHerd/HerdStoryLog';
 import AnimalCareAnimationModal from './AnimalCareAnimationModal';
 import LiveTrailActionGame from './LiveTrailActionGame';
+import FullColorPetBarnAndCaravan from './FullColorPetBarnAndCaravan';
 
 import { TRAIL_PACKS, getTrailPackById, getAvailableTrailPacks } from '../../data/game/trailPacks';
 import { TrailQuestEngine } from '../../services/TrailQuestEngine';
@@ -337,6 +338,19 @@ export default function HerdTrailQuest({
             <span>Morning Barn Check</span>
           </button>
 
+          {/* 1B. Full-Color 12-Species Pet Barn, 10 Trails & Drag-and-Drop Care Studio */}
+          <button
+            onClick={() => { soundEffects.playTap(); setActiveTab('petbarn'); }}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer ${
+              activeTab === 'petbarn'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs ring-2 ring-emerald-400/50'
+                : 'bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100'
+            }`}
+          >
+            <span>🏡</span>
+            <span>Pet Barn, 10 Trails &amp; Drag Care</span>
+          </button>
+
           {/* 2. Living Trail Movement */}
           <button
             onClick={() => { soundEffects.playTap(); setActiveTab('trail'); }}
@@ -490,7 +504,19 @@ export default function HerdTrailQuest({
             onOpenTrailRun={() => setActiveTab('trail')}
             onOpenAiTrainer={onOpenAiTrainer}
           />
+          <FullColorPetBarnAndCaravan
+            questState={questState}
+            onBoostCareMetric={(type) => handleCareAction(type)}
+          />
         </div>
+      )}
+
+      {/* Screen 1B: Dedicated Full-Color 12-Species Pet Barn, 10 Trails & Drag Care Studio */}
+      {activeTab === 'petbarn' && (
+        <FullColorPetBarnAndCaravan
+          questState={questState}
+          onBoostCareMetric={(type) => handleCareAction(type)}
+        />
       )}
 
       {/* Screen 2: Living Trail Movement & Overland Drive */}
