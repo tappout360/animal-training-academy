@@ -5,7 +5,7 @@ import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/react';
 import { 
   Sparkles, Bot, Flame, Wifi, WifiOff, Award, 
   BookOpen, Target, CheckSquare, ShieldCheck, Users, BarChart3, HelpCircle,
-  Compass, Map, ClipboardList, Download
+  Compass, Map, ClipboardList, Download, Cloud
 } from 'lucide-react';
 import RoleSwitcher from './RoleSwitcher';
 import { PwaService } from '../../services/PwaService';
@@ -21,6 +21,7 @@ export default function Navbar({
   onToggleOffline,
   onOpenAiTrainer,
   onOpenPlans,
+  onOpenCloudSync,
   learner
 }) {
   const [canInstall, setCanInstall] = useState(false);
@@ -117,6 +118,16 @@ export default function Navbar({
 
           {/* Role Switcher */}
           <RoleSwitcher activeRole={activeRole} onSelectRole={onSelectRole} />
+
+          {/* Cloud Sync & MFA Security Button */}
+          <button
+            onClick={onOpenCloudSync}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 transition cursor-pointer"
+            title="Local Dexie Storage & Optional MongoDB Cloud Sync"
+          >
+            <Cloud className="w-3.5 h-3.5 text-teal-600" />
+            <span className="hidden lg:inline">Cloud Backup &amp; MFA</span>
+          </button>
 
           {/* Clerk Authentication Controls */}
           {hasClerkKey && (

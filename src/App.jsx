@@ -22,6 +22,7 @@ import ParentControlCenter from './components/parent/ParentControlCenter';
 import RoleAuthGateModal from './components/common/RoleAuthGateModal';
 import BarnRecordBook from './components/recordbook/BarnRecordBook';
 import SubscriptionPlansModal from './components/billing/SubscriptionPlansModal';
+import CloudSyncAndMfaModal from './components/common/CloudSyncAndMfaModal';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import FeedbackWidget from './components/common/FeedbackWidget';
 
@@ -43,6 +44,7 @@ export default function App() {
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState(false);
 
   // Lesson & Quiz Drill-Down States
   const [activeLessonModule, setActiveLessonModule] = useState(null);
@@ -155,6 +157,7 @@ export default function App() {
         onToggleOffline={() => setIsOfflineMode(!isOfflineMode)}
         onOpenAiTrainer={() => setIsAiModalOpen(true)}
         onOpenPlans={() => setIsSubscriptionModalOpen(true)}
+        onOpenCloudSync={() => setIsCloudSyncModalOpen(true)}
         learner={currentLearner}
       />
 
@@ -339,6 +342,12 @@ export default function App() {
         isOpen={isSubscriptionModalOpen}
         onClose={() => setIsSubscriptionModalOpen(false)}
         parentEmail="parent.miller@example.com"
+      />
+
+      {/* Local-First Dexie & Optional MongoDB Cloud Sync + MFA Security Modal */}
+      <CloudSyncAndMfaModal
+        isOpen={isCloudSyncModalOpen}
+        onClose={() => setIsCloudSyncModalOpen(false)}
       />
 
       {/* Floating In-App Continuous Feedback Widget */}

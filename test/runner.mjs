@@ -22,6 +22,7 @@ import {
   recoverPinOrPasscode,
   resetSecurityCredentialsToDefaults
 } from '../src/services/YouthSafetyService.js';
+import { CloudSyncService } from '../src/services/CloudSyncService.js';
 import { AdminAuthService } from '../src/services/AdminAuthService.js';
 import { calculateLearnerMastery } from '../src/services/MasteryEngine.js';
 import { 
@@ -2262,6 +2263,23 @@ test('Parent & 4-H Coach Passcode and PIN Setup system supports custom PINs, Co-
 
   // Reset back to defaults after test
   resetSecurityCredentialsToDefaults();
+});
+
+test('Local-First Dexie default & optional Cloud Sync metadata lifecycle', () => {
+  const initialMeta = CloudSyncService.getLocalSyncMeta();
+  assert.ok(initialMeta, 'Must return initial sync metadata');
+  assert.strictEqual(typeof initialMeta.autoSyncEnabled, 'boolean');
+
+  CloudSyncService.setLocalSyncMeta({
+    lastSyncedAt: '2026-10-01T12:00:00.000Z',
+    autoSyncEnabled: true,
+    status: 'synced',
+    pendingChanges: false
+  });
+
+  const updatedMeta = CloudSyncService.getLocalSyncMeta();
+  assert.strictEqual(updatedMeta.status, 'synced');
+  assert.strictEqual(updatedMeta.autoSyncEnabled, true);
 });
 
 test('Zero-Jank debounced batch save preserves main thread responsiveness and persists state accurately', (done) => {
